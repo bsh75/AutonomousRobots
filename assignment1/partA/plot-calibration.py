@@ -1,5 +1,7 @@
 from numpy import loadtxt
 from matplotlib.pyplot import subplots, show
+
+
 # Test
 # Load data
 filename = 'assignment1/partA/calibration.csv'
