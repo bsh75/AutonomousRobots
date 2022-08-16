@@ -2,7 +2,7 @@ from numpy import loadtxt
 from matplotlib.pyplot import subplots, show
 # Test
 # Load data
-filename = 'calibration.csv'
+filename = 'assignment1/partA/calibration.csv'
 data = loadtxt(filename, delimiter=',', skiprows=1)
 
 # Split into columns

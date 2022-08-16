@@ -2,7 +2,7 @@ from numpy import loadtxt, gradient
 from matplotlib.pyplot import subplots, show
 
 # Load data
-filename = 'training1.csv'
+filename = 'assignment1/partA/training1.csv'
 data = loadtxt(filename, delimiter=',', skiprows=1)
 
 # Split into columns

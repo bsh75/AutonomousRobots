@@ -30,7 +30,7 @@ seed(1)
 # data is a (many x 13) matrix. Its columns are:
 # time_ns, velocity_command, rotation_command, map_x, map_y, map_theta, odom_x, odom_y, odom_theta,
 # beacon_ids, beacon_x, beacon_y, beacon_theta
-data = np.genfromtxt('data.csv', delimiter=',', skip_header=1)
+data = np.genfromtxt('assignment1/partB/data.csv', delimiter=',', skip_header=1)
 
 # Time in ns
 t = data[:, 0]
@@ -54,7 +54,7 @@ beacon_visible = beacon_ids >= 0
 
 # map_data is a 16x13 matrix.  Its columns are:
 # beacon_ids, x, y, theta, (9 columns of covariance)
-map_data = np.genfromtxt('beacon_map.csv', delimiter=',', skip_header=1)
+map_data = np.genfromtxt('assignment1/partB/beacon_map.csv', delimiter=',', skip_header=1)
 
 Nbeacons = map_data.shape[0]
 beacon_locs = np.zeros((Nbeacons, 3))
