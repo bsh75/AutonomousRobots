@@ -28,7 +28,7 @@ axes[1].set_title('error')
 
 # 1st iteration
 n = 0 # index for outer loop
-N = 4 # How many times the data is cleaned
+N = 5 # How many times the data is cleaned
 errorMin = -0.3 # Eyeballed min value that appears on error plot
 errorMax = 0.7 # Eyeballed max value
 
@@ -70,7 +70,7 @@ axes[0].plot(distance, fit)
 axes[0].set_title('Plot plus fit')
 axes[1].plot(distance, error, '.', alpha=0.2)
 axes[1].set_title('error')
-axes[2].hist(error, bins=100)
+axes[2].hist(error, bins=50)
 axes[2].set_title('histogram')
 
 print(params)
