@@ -5,7 +5,7 @@ from matplotlib.pyplot import subplots, show
 from scipy.optimize import curve_fit
 
 def model(x,a,b,c,d):
-    return 0.5*a * np.exp(-0.5*b *x) + c*x +d 
+    return  1/(a*x+b) + c*x + d # Alfies old: 0.5*a * np.exp(-0.5*b *x) + c*x +d
 
 # Test
 # Load data
