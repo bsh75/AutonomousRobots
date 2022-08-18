@@ -29,15 +29,6 @@ while n <= N:
         if (abs(distance[i]-rawS1[i]) > tolerance):
             distance.pop(i)
             rawS1.pop(i)
-        # # print(error[i])
-        # if error[i] > errorMax:
-        #     distance.pop(i)
-        #     rawS1.pop(i)
-        #     error.pop(i)
-        # elif error[i] < errorMin:
-        #     distance.pop(i)
-        #     rawS1.pop(i)
-        #     error.pop(i)
         i += 1
 
     distance = np.array(distance)

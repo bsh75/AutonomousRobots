@@ -1,6 +1,7 @@
 from symfit import parameters, variables, Fit, Piecewise, exp, Eq, Model
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import subplots
 from numpy import loadtxt
 
 filename = 'assignment1/partA/calibration.csv'
@@ -8,11 +9,12 @@ IR3Data = loadtxt(filename, delimiter=',',skiprows=1, usecols=(2,7))
 distance, voltage = IR3Data.T
 
 x, y = variables('x, y')
-a, b, c, d, e, f, g, h, i, x0 = parameters('a, b, c, d, e, f, g, h, i, x0')
+a, b, c, d, e, f, g, h, i, j, x0 = parameters('a, b, c, d, e, f, g, h, i, j, x0')
 
 # Make a piecewise model
-y1 = a * x**4 + b * x**3 + c * x**2 + d * x + e
-y2 = 1/ (f* x + g) + h * x + i
+# y1 = a * x**4 + b * x**3 + c * x**2 + d * x + e
+y1 = a * x**5 + b * x**4 + c * x**3 + d * x**2 + e * x + f
+y2 = 1/ (g* x + h) + i * x + j
 model = Model({y: Piecewise((y1, x <= x0), (y2, x > x0))})
 
 # As a constraint, we demand equality between the two models at the point x0
@@ -20,6 +22,7 @@ model = Model({y: Piecewise((y1, x <= x0), (y2, x > x0))})
 # constraints = [
 #     Eq(y1.subs({x: x0}), y2.subs({x: x0}))
 # ]
+
 constraints = [
     Eq(y1.diff(x).subs({x: x0}), y2.diff(x).subs({x: x0})),
     Eq(y1.subs({x: x0}), y2.subs({x: x0}))
@@ -38,8 +41,39 @@ x0.max = 1.2
 
 fit = Fit(model, x=xdata, y=ydata, constraints=constraints)
 fit_result = fit.execute()
-print(fit_result)
+yFit = model(x=xdata, **fit_result.params).y
 
-plt.plot(xdata, ydata, '.')
-plt.plot(xdata, model(x=xdata, **fit_result.params).y)
+fig, axes = subplots(2)
+axes[0].plot(xdata, ydata, '.')
+axes[0].plot(xdata, yFit)
+
+tolerance = 0.5
+n = 0
+N = 10
+
+while n < N:
+    n += 1
+    error = ydata - yFit
+    xdata = xdata.tolist()
+    ydata = ydata.tolist()
+
+    i = 0
+    while i < len(xdata):
+        if (abs(error[i]) > tolerance):
+            xdata.pop(i)
+            ydata.pop(i)
+        i += 1
+
+    xdata = np.array(xdata)
+    ydata = np.array(ydata)
+
+    fit = Fit(model, x=xdata, y=ydata, constraints=constraints)
+    fit_result = fit.execute()
+    yFit = model(x=xdata, **fit_result.params).y
+
+error = ydata - yFit
+
+axes[1].plot(xdata, ydata, '.')
+axes[1].plot(xdata, yFit)
+
 plt.show()
