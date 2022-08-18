@@ -33,8 +33,8 @@ axes[2].hist(IRerror, bins=100)
 axes[2].set_title('histogram')
 
 
-upperLim = 0.1
-lowerLim = -0.1
+upperLim = 0.15
+lowerLim = -0.15
 fittedx = []
 fittedy = []
 print(len(x))
@@ -67,7 +67,7 @@ axes[0].set_title('IR3 raw data')
 axes[1].plot(fittedx, fittedIRerror, '.')
 axes[1].set_title('measurement error')
 
-axes[2].hist(fittedIRerror, bins=100)
+axes[2].hist(fittedIRerror, bins=50)
 axes[2].set_title('histogram')
 
 
