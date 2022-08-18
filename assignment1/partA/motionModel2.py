@@ -28,7 +28,7 @@ fit = model(v_com,*params)
 a = params[0]
 b = params[1]
 
-v_mod = [1/a*i+b for i in v_est]
+v_mod = [1/a*i-b for i in v_est] # inverse relationship to find velocity model
 error = v_com - v_mod
 # result = [item * 10 for item in my_list]
 #print(d)
@@ -54,7 +54,9 @@ axes2[1].set_xlabel('Error')
 axes2[1].set_ylabel('Count')
 
 mean = np.mean(error)
-stdDev = np.std(error)
+var = np.var(error)
+
+print("Mean =", mean, " Var =", var)
 
 show()
 

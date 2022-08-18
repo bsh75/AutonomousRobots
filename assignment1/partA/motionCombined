@@ -9,7 +9,7 @@ from scipy.optimize import curve_fit
 def model(x,a,b):
     return a * x + b
 
-# Load data
+# Load data from each training file
 filename1 = 'assignment1/partA/training1.csv'
 data1 = loadtxt(filename1, delimiter=',', skiprows=1, usecols = (1,2,3))
 time1, distance1, v_com1 = data1.T
@@ -19,13 +19,14 @@ data2 = loadtxt(filename2, delimiter=',', skiprows=1, usecols = (1,2,3))
 time2, distance2, v_com2 = data2.T
 
 ### Find relationship between commanded and measured
-# Get list of dts and velocity estimates (Same as michael did in Speeds Plot)
-_DispatchArity1 = time1[1:] - time1[0:-1]
+# get the estimated velocity from the measured displacement data
+dt = time1[1:] - time1[0:-1]
 v_est1 = gradient(distance1, time1)
 
 dt2 = time2[1:] - time2[0:-1]
 v_est2 = gradient(distance2, time2)
 
+# Concatenate the data to find the overall relationship
 v_est = np.concatenate([v_est1, v_est2])
 v_com = np.concatenate([v_com1, v_com2])
 
@@ -37,10 +38,10 @@ a = params[0]
 b = params[1]
 print("a =", a, " b =", b)
 
-v_mod = [1/a*i+b for i in v_est]
+# Find velocity model by back solving using the relationship just found
+v_mod = [1/a*i-b for i in v_est] 
 error = v_com - v_mod
-# result = [item * 10 for item in my_list]
-#print(d)
+
 # Plot results
 fig, axes = subplots(2)
 axes[0].plot(v_com, v_est, '.')
@@ -52,6 +53,7 @@ axes[1].hist(error, bins=100)
 axes[1].set_xlabel('Count')
 axes[1].set_ylabel('Error (m/s)')
 
+# Get mean and variance of new motion model
 mean = np.mean(error)
 var = np.var(error)
 
