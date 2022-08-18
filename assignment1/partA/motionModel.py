@@ -30,6 +30,7 @@ axes.set_ylabel('Measured Velocity (m/s)')
 # Gives the equations between the commanded and measured speeds
 a = params[0]
 b = params[1]
+print(a, b)
 v_mod = [a*i+b for i in v_est]
 # result = [item * 10 for item in my_list]
 #print(d)
