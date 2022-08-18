@@ -13,6 +13,7 @@ v_com = velocity_command
 
 dt = time[1:] - time[0:-1]
 v_est = gradient(distance, time)
+print(v_est)
 
 fig, axes = subplots(1)
 axes.plot(time, v_com, label='commanded speed')
