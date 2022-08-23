@@ -46,7 +46,11 @@ def motion_model(particle_poses, speed_command, odom_pose, odom_pose_prev, dt):
     # add much noise.
 
     for m in range(M):
+        # x(m)n = x(m)n-1 + g(x(m)n-1, un-1) + w(m)n
+
+        # Add gaussian additive noise in x direction
         particle_poses[m, 0] += randn(1) * 0.1
+        # Particles move in the -y direction   WHY IS THE GRAPH X AND Y OPPOSITE TO WHAT YOUD EXPECT FOR A MAP!!!!
         particle_poses[m, 1] -= 0.1
     
     return particle_poses

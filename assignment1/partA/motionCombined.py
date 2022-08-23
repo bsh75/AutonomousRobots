@@ -1,4 +1,4 @@
-# from math import dist
+from math import dist
 import numpy as np
 from numpy import loadtxt, gradient
 from matplotlib.pyplot import plot, subplots, show
@@ -46,12 +46,12 @@ error = v_com - v_mod
 fig, axes = subplots(2)
 axes[0].plot(v_com, v_est, '.')
 axes[0].plot(v_com, fit)
-axes[1].set_xlabel('Commanded Velocity (m/s)')
-axes[1].set_ylabel('Measured Velocity (m/s)')
+axes[0].set_xlabel('Commanded Velocity (m/s)')
+axes[0].set_ylabel('Measured Velocity (m/s)')
 
 axes[1].hist(error, bins=100)
-axes[1].set_xlabel('Count')
-axes[1].set_ylabel('Error (m/s)')
+axes[1].set_ylabel('Count')
+axes[1].set_xlabel('Error (m/s)')
 
 # Get mean and variance of new motion model
 mean = np.mean(error)
