@@ -43,17 +43,24 @@ fit = Fit(model, x=xdata, y=ydata, constraints=constraints)
 fit_result = fit.execute()
 yFit = model(x=xdata, **fit_result.params).y
 
-fig, axes = subplots(2)
+error = ydata - yFit
+
+mean = np.mean(error)
+var = np.var(error)
+
+print("Old Mean =", mean, "New Var =", var)
+
+fig1, axes = subplots(2)
 axes[0].plot(xdata, ydata, '.')
 axes[0].plot(xdata, yFit)
 
+ydataFull = ydata
 tolerance = 0.5
 n = 0
-N = 10
+N = 5
 
 while n < N:
     n += 1
-    error = ydata - yFit
     xdata = xdata.tolist()
     ydata = ydata.tolist()
 
@@ -73,7 +80,14 @@ while n < N:
 
 error = ydata - yFit
 
-axes[1].plot(xdata, ydata, '.')
-axes[1].plot(xdata, yFit)
+fig2, axes2 = subplots(2)
+axes2[0].plot(xdata, ydata, '.')
+axes2[0].plot(xdata, yFit)
+axes2[1].hist(error, bins=100)
+
+mean = np.mean(error)
+var = np.var(error)
+
+print("Mean =", mean, " Var =", var)
 
 plt.show()

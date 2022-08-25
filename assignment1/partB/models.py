@@ -45,9 +45,13 @@ def motion_model(particle_poses, speed_command, odom_pose, odom_pose_prev, dt):
     # additive noise in the x direction.  Hint, to start with do not
     # add much noise.
 
+    phi1Prime = np.arctan2((odom_pose[1]-odom_pose_prev[1]),(odom_pose[0]-odom_pose_prev[0])) - odom_pose_prev[2]
+    dPrime = np.sqrt((odom_pose[1]-odom_pose_prev[1])**2 + (odom_pose[0]-odom_pose_prev[0])**2)
+    phi2Prime = odom_pose[2] - odom_pose_prev[2] - phi1Prime
     for m in range(M):
-        particle_poses[m, 0] += randn(1) * 0.1
-        particle_poses[m, 1] -= 0.1
+        particle_poses[m, 0] += dPrime*cos(particle_poses[m, 2] + phi1Prime) # + randn(1) * 0.1
+        particle_poses[m, 1] += dPrime*sin(particle_poses[m, 2] + phi1Prime) # + randn(1) * 0.1
+        particle_poses[m, 2] += phi1Prime + phi2Prime
     
     return particle_poses
 
