@@ -52,9 +52,9 @@ def transform_pose(tf, pose):
     result = np.zeros(np.broadcast(tf, pose).shape, dtype=np.double).reshape((-1, 3))
 
     # Do the actual calculation
-    result[:, 0] = a_[:, 0] + b_[:, 0] * np.cos(a_[:, 2]) - b_[:, 1] * np.sin(a_[:, 2])
-    result[:, 1] = a_[:, 1] + b_[:, 0] * np.sin(a_[:, 2]) + b_[:, 1] * np.cos(a_[:, 2])
-    result[:, 2] = a_[:, 2] + b_[:, 2]
+    result[:, 0] = a_[:, 0] + b_[:, 0] * np.cos(a_[:, 2]) - b_[:, 1] * np.sin(a_[:, 2]) # deltaX + x1 cos(deltaTheta) - y1 sin(deltaTheta)
+    result[:, 1] = a_[:, 1] + b_[:, 0] * np.sin(a_[:, 2]) + b_[:, 1] * np.cos(a_[:, 2]) # deltaY + y1 cos(deltaTheta) - x1 sin(deltaTheta)
+    result[:, 2] = a_[:, 2] + b_[:, 2]                                                  # theta2 = theta1 + deltaTheta
 
     # Make sure angle is in [-pi, pi)
     result[:, 2] = wraptopi(result[:, 2])

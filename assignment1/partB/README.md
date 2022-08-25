@@ -2,7 +2,7 @@ ENMT482 Particle Filter Assignment
 ==================================
 
 The only files that need editing are `demo.py` and `models.py`.  Look for
-the TODOs! 
+the TODOs!
 
 The data is in the file `data.csv`.
 

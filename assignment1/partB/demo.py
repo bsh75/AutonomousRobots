@@ -66,8 +66,8 @@ for m in range(Nbeacons):
 slam_poses = clean_poses(slam_poses)
 
 # Transform odometry poses into map frame
-odom_to_map = find_transform(odom_poses[0], slam_poses[0])
-odom_poses = transform_pose(odom_to_map, odom_poses)
+odom_to_map = find_transform(odom_poses[0], slam_poses[0]) # Return the transformation from `odom_poses[0]` to `slam_poses[0]`
+odom_poses = transform_pose(odom_to_map, odom_poses) # Apply transformation 'odom_to_map' (dx, dy, dtheta) to 'odom_pose' (x, y, theta)
 
 plt.ion()
 fig = plt.figure(figsize=(10, 5))
