@@ -27,8 +27,8 @@ params, cov = curve_fit(model, v_com, v_est)
 fit = model(v_com,*params)
 axes[0].plot(time, v_est,)
 axes[0].plot(time, v_com)
-#axes[0].set_xlabel('Commanded Velocity (m/s)')
-#axes[0].set_ylabel('Measured Velocity (m/s)')
+axes[0].set_xlabel('Commanded Velocity (m/s)')
+axes[0].set_ylabel('Measured Velocity (m/s)')
 # Gives the equations between the commanded and measured speeds
 a = params[0]
 b = params[1]
@@ -48,34 +48,6 @@ set1Variance = statistics.variance(error, set1Mean)
 
 print("Training set1 mean error = {0:.5f} with variance {1:.5f}". format(set1Mean,set1Variance))
 print("Training set1 mean error = {} with variance {}". format(set1Mean,set1Variance))
-
-
-
-# #defining lists the length of dats imported - 
-# xbelief = [0]*len(time)
-# g_ux=[0]*len(time)
-# wn = [0]*len(time)
-# time = time.tolist()
-# v_com = v_com.tolist()
-
-# for i  in range(len(time)-1):
-#     #Motion model somewhat works, error does accumulate
-#     #Question for micheal or you (brett). are we modelling velocity or displacement. (work up until now has been for displacement )
-#     t_step = time[i+1] - time[i]
-#     g_ux[i] = v_com[i]*t_step
-#     xbelief[i+1] = xbelief[i] + g_ux[i] 
-#     #code for trying to add process noise following formula in guide. Greened me out as its negative of the motion model 
-
-#     #wn[i+1] = xbelief[i+1]-xbelief[i] - g_ux[i] tryingto add sensor noise model in, obviously not right eway to go about it 
-#     #xbelief[i+1] = xbelief[i] + g_ux[i] - wn[i+1]
-    
-
-# fig, axes = subplots(1)
-# axes.plot(time, dist, label='measured distance')
-# axes.plot(time, xbelief, label='modelled distance')
-# axes.set_xlabel('Time')
-# axes.set_ylabel('displacment (m/s)')
-# axes.legend()
 
 show()
 

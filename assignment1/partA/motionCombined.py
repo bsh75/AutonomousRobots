@@ -53,6 +53,17 @@ axes[1].hist(error, bins=100)
 axes[1].set_ylabel('Count')
 axes[1].set_xlabel('Error (m/s)')
 
+fig, axes = subplots(2)
+axes[0].plot(time1, v_com1)
+axes[0].plot(time1, v_mod[0:4819])
+axes[0].set_xlabel('Time (s)')
+axes[0].set_ylabel('Velocity (m/s)')
+
+axes[1].plot(time2, v_com2)
+axes[1].plot(time2, v_mod[4819:])
+axes[1].set_xlabel('Time (s)')
+axes[1].set_ylabel('Velocity (m/s)')
+
 # Get mean and variance of new motion model
 mean = np.mean(error)
 var = np.var(error)
