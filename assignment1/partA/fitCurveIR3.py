@@ -61,6 +61,8 @@ fittedIRerror = fittedy - fittedIRfit
 
 set1Mean = np.mean(fittedIRerror)
 set1Variance = np.var(fittedIRerror)
+
+print(params)
 print("Refitted mean error = {0:.4f} with variance {1:.4f}". format(set1Mean,set1Variance))
 print("Refitted mean error = {} with variance {}". format(set1Mean,set1Variance))
 

@@ -16,7 +16,6 @@ a, b, c, d, e, f, g, h, i, j, x0 = parameters('a, b, c, d, e, f, g, h, i, j, x0'
 y1 = a * x**5 + b * x**4 + c * x**3 + d * x**2 + e * x + f
 y2 = 1/ (g* x + h) + i * x + j
 model = Model({y: Piecewise((y1, x <= x0), (y2, x > x0))})
-
 # As a constraint, we demand equality between the two models at the point x0
 # to do this, we substitute x -> x0 and demand equality using `Eq`
 # constraints = [
@@ -57,19 +56,19 @@ axes[0].plot(xdata, yFit)
 ydataFull = ydata
 tolerance = 0.5
 n = 0
-N = 5
+N = 2
 
 while n < N:
     n += 1
     xdata = xdata.tolist()
     ydata = ydata.tolist()
 
-    i = 0
-    while i < len(xdata):
-        if (abs(error[i]) > tolerance):
-            xdata.pop(i)
-            ydata.pop(i)
-        i += 1
+    k = 0
+    while k < len(xdata):
+        if (abs(error[k]) > tolerance):
+            xdata.pop(k)
+            ydata.pop(k)
+        k += 1
 
     xdata = np.array(xdata)
     ydata = np.array(ydata)
@@ -89,5 +88,8 @@ mean = np.mean(error)
 var = np.var(error)
 
 print("Mean =", mean, " Var =", var)
+print(fit_result)
+
+# print(a.value, b.value, c.value, d.value, e.value, f.value, g.value, h.value, i.value, j.value, x0.value)
 
 plt.show()
