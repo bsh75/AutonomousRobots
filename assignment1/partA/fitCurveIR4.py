@@ -36,8 +36,8 @@ xdata = distance
 ydata = voltage
 
 # Help the fit by bounding the switchpoint between the models
-x0.min = 0.8
-x0.max = 1.2
+x0.min = 0.7
+x0.max = 0.9
 
 fit = Fit(model, x=xdata, y=ydata, constraints=constraints)
 fit_result = fit.execute()
@@ -48,7 +48,7 @@ error = ydata - yFit
 mean = np.mean(error)
 var = np.var(error)
 
-print("Old Mean =", mean, "New Var =", var)
+print("Old Mean =", mean, "Old Var =", var)
 
 fig1, axes = subplots(2)
 axes[0].plot(xdata, ydata, '.')
