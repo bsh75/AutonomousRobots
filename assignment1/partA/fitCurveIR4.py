@@ -12,8 +12,9 @@ x, y = variables('x, y')
 a, b, c, d, e, f, g, h, i, j, x0 = parameters('a, b, c, d, e, f, g, h, i, j, x0')
 
 # Make a piecewise model
-# y1 = a * x**4 + b * x**3 + c * x**2 + d * x + e
-y1 = a * x**5 + b * x**4 + c * x**3 + d * x**2 + e * x + f
+# y1 = a * x**3 + b * x**2 + c * x + d
+y1 = a * x**4 + b * x**3 + c * x**2 + d * x + e
+# y1 = a * x**5 + b * x**4 + c * x**3 + d * x**2 + e * x + f
 y2 = 1/ (g* x + h) + i * x + j
 model = Model({y: Piecewise((y1, x <= x0), (y2, x > x0))})
 # As a constraint, we demand equality between the two models at the point x0
