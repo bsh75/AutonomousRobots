@@ -1,4 +1,4 @@
-from tkinter import Y
+from tkinter import W, Y
 import numpy as np
 from numpy import loadtxt
 
@@ -10,6 +10,23 @@ data = loadtxt(filename, delimiter=',', skiprows=1)
 index, time, velocity_command, raw_ir1, raw_ir2, raw_ir3, raw_ir4, \
     sonar1, sonar2 = data.T
 
+##### Lookup Function and Tables ##########################
+# Lookup tables attained from 'divide_chunks' function in models
+xLookupIr3 = [0.09679938, 0.90525033, 1.71370128, 2.52215223, 3.33060318]
+variancesIr3 = [0.004826065829283602, 0.004357475760755817, 0.005871319309306362, 0.004765047580434493, 0.006197931690626443]
+xLookupIr4 = [0.09679938, 0.90525033, 1.71370128, 2.52215223, 3.33060318]
+variancesIr4 = [0.12220775598917524, 0.015966623766261956, 0.012969067620212034, 0.019064140416456637, 0.022062251790182192]
+xLookupSonar = [0.09679938, 0.90525033, 1.71370128, 2.52215223, 3.33060318]
+variancesSonar = [2.281659850515315e-05, 1.7174942189593155e-05, 3.873231279068888e-05, 0.00011085378539295636, 0.00013254441517565623]
+xLookupMotion = [-0.53948363, -0.27169283, -0.00390204,  0.26388876,  0.53167956]
+variancesMotion = [0.0019200491161449286, 0.00123474268792669, 0.0002559447356770384, 0.0009352631546926811, 0.0014164489783990344]
+
+def VarLookup(x, xLookup, variances):
+    for i in range(0, len(xLookup)-1):
+        if (x >= xLookup[i]) and (x < xLookup):
+            Var = variances[i]
+    return Var
+
 ##### Motion Model (form motionCombined.py) ##################
 a = 0.858707
 b = -0.001387
@@ -18,6 +35,11 @@ def motion(x):
 
 motionMeanE = 0.000228
 motionVarE = 0.00053
+
+def linearMotionVar(x0):
+    varX = VarLookup(x0, xLookupMotion, variancesMotion)
+    motionInvVarE = a**2 * varX # Var(aX + b) = a^2*Var(X)
+    return motionInvVarE
 
 ##### IR4 Sensor Model #######################################
 # For 5th order
@@ -50,22 +72,6 @@ def ir4(x):
         z = 1/ (g* x + h) + i * x + j
     return z
 
-def derivativeIr4(x):
-    if x <= x0:
-        return 4*a*x**3 + 3*b*x**2 + 2*c*x + d
-    else:
-        return -a/(a*x + b)**2 + c
-
-def linearIr4Var(x0, varX):
-    """Function linearises sensor model about x0 and calculates variance in Z based on linear model"""
-    # Taylor series with 2 terms [ h = h(x0)) + h'(x0)(x-x0) ] {ir3Inv(x0) + derivativeIr3(x0)*(x-x0)}
-    # turned into y = mx+k form:
-    m = derivativeIr3(x0)
-    k = ir3Inv(x0)-derivativeIr3(x0)*x0
-    varZ = m**2 * varX
-    return varZ
-
-
 def ir4Inv(z, xPast):
     """returns a list of possible x values for a given z"""
     possibleX = []
@@ -88,6 +94,22 @@ def ir4Inv(z, xPast):
             X = x
     return X
 
+def derivativeIr4(x):
+    if x <= x0:
+        return 4*a*x**3 + 3*b*x**2 + 2*c*x + d
+    else:
+        return -a/(a*x + b)**2 + c
+
+def linearIr4Var(x0):
+    """Function linearises sensor model about x0 and calculates variance in Z based on linear model"""
+    # Taylor series with 2 terms [ h = h(x0)) + h'(x0)(x-x0) ] {ir3Inv(x0) + derivativeIr3(x0)*(x-x0)}
+    # turned into y = mx+k form:
+    varX = VarLookup(x0, xLookupIr4, variancesIr4)
+    m = derivativeIr3(x0)
+    k = ir3Inv(x0)-derivativeIr3(x0)*x0
+    varZ = m**2 * varX
+    return varZ
+
 ir4MeanE = -0.0016598
 ir4VarE = 0.0395728
 
@@ -103,7 +125,11 @@ def sonarInv(z):
 
 sonarMeanE = -1.814182e-12
 sonarVarE = 0.007945636
-sonarInvVarE = a**2 * sonarVarE # Var(aX + b) = a^2*Var(X)
+
+def linearSonarVar(x0):
+    varX = VarLookup(x0, xLookupSonar, variancesSonar)
+    sonarInvVarE = a**2 * varX # Var(aX + b) = a^2*Var(X)
+    return sonarInvVarE
 
 ##### IR3 Model ###########################################
 a = 3.37323446
@@ -125,10 +151,11 @@ def ir3Inv(z, xPast):
 def derivativeIr3(x):
     return -a/(a*x + b)**2 + c
 
-def linearIr3Var(x0, varX):
+def linearIr3Var(x0):
     """Function linearises sensor model about x0 and calculates variance in Z based on linear model"""
     # Taylor series with 2 terms [ h = h(x0)) + h'(x0)(x-x0) ] {ir3Inv(x0) + derivativeIr3(x0)*(x-x0)}
     # turned into y = mx+k form:
+    varX = VarLookup(x0, xLookupIr3, variancesIr3)
     m = derivativeIr3(x0)
     k = ir3Inv(x0)-derivativeIr3(x0)*x0
     varZ = m**2 * varX
@@ -136,7 +163,6 @@ def linearIr3Var(x0, varX):
     
 ir3MeanE = 6.8549e-10
 ir3VarE = 0.005288364
-
 
 ##### Testing #############################################
 # zS = 0.1
@@ -155,14 +181,29 @@ posteriorB = (1, 0)
 for i in index:
     dt = time[i+1]-time[i]
     velocity = motion(velocity_command[i])
-    priorB[0] = initialB + velocity*time
-    priorB[1] = motionVarE
+    currentBestEst = initialB + velocity*time
+    priorB[0] = currentBestEst
+    priorB[1] = linearMotionVar(currentBestEst)
 
     Xir3 = ir3Inv(raw_ir3[i], Xir3Past)
     Xir4 = ir3Inv(raw_ir4[i], Xir4Past)
-    Xsonar = sonarInv(raw_ir3[i], XsonarPast)
+    Xsonar = sonarInv(sonar1[i], XsonarPast)
     Xir3Past = Xir3
     Xir4Past = Xir4
     XsonarPast = Xsonar
 
-    MLB = w1 * X1 + w2 * X2 + w3 * X3
+    VarIr3 = linearIr3Var(currentBestEst)
+    VarIr4 = linearIr4Var(currentBestEst)
+    VarSonar = linearSonarVar(currentBestEst)
+
+    # BLUE for combining Ir sensors
+    # choose w1 such that Var[Xir] minimised: min(Var[Xir]) = w1^2*Var[Xir3] + (1-w1)^2*Var[Xir4]
+    # derivative of function: (2*VarIr3 - 2*VarIr4)*w1 - 2*VarIr4 = 0
+    w1 = 2*VarIr4/(2*VarIr3 - 2*VarIr4)
+    Xir = w1 * Xir3 + (1-w1) * Xir4 
+    VarXir = w1**2 * VarIr3 + (1-w1)**2 * VarIr4
+
+    # BLUE for combining Ir and Sonar
+    w2 = 2*VarXir/(2*VarSonar - 2*VarXir)
+
+    X = w2 * Xir + (1-w2) * Xsonar
