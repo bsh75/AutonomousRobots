@@ -80,7 +80,43 @@ axes[1].set_title('measurement error')
 axes[2].hist(fittedIRerror, bins=50)
 axes[2].set_title('histogram')
 
+########### Get Lookup tables for variances ################
+#### Split error into N lists depending on the xList values assosiated ############
+def divide_chunks(xL, errorL, N):
+    """Function takes a list of errors and their assosiated positions in
+    x axis and returns a list of x divisions and the variances assosiated 
+    with each division"""
+    print("original list size of: {}".format(len(xL)))
+    splitList = []
+    splitError = []
+    # errors = []
+    div = (max(xL)-min(xL))/N
+    print("divider = {}".format(div))
+    for n in range(0, N):
+        xSection = []
+        errorSection = []
+        for i in range(0, len(xL)):
+            if xL[i] >= (min(xL) + n*div) and xL[i] < (min(xL) + (n+1)*div):
+                xSection.append(xL[i])
+                errorSection.append(errorL[i])
+        splitList.append(xSection)
+        splitError.append(errorSection)
 
+    # sum = 0
+    # for i in range(0, len(splitList)):
+    #     size = len(splitList[i])
+    #     sum += size
+    # print("sum of sections: {}".format(sum))
+    vars = []
+    xdivisions = np.linspace(min(xL), max(xL), N)
+    for e in splitError:
+        vars.append(np.var(e))
+    print("x lookup list is {}".format(xdivisions))
+    print("associated variances in error: {}".format(vars))
+    return xdivisions, vars
+
+n = 5
+X, E = divide_chunks(fittedx, fittedIRerror, n)
 
 show()
 

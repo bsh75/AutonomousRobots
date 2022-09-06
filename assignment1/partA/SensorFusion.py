@@ -50,7 +50,23 @@ def ir4(x):
         z = 1/ (g* x + h) + i * x + j
     return z
 
-def ir4Inv(z):
+def derivativeIr4(x):
+    if x <= x0:
+        return 4*a*x**3 + 3*b*x**2 + 2*c*x + d
+    else:
+        return -a/(a*x + b)**2 + c
+
+def linearIr4Var(x0, varX):
+    """Function linearises sensor model about x0 and calculates variance in Z based on linear model"""
+    # Taylor series with 2 terms [ h = h(x0)) + h'(x0)(x-x0) ] {ir3Inv(x0) + derivativeIr3(x0)*(x-x0)}
+    # turned into y = mx+k form:
+    m = derivativeIr3(x0)
+    k = ir3Inv(x0)-derivativeIr3(x0)*x0
+    varZ = m**2 * varX
+    return varZ
+
+
+def ir4Inv(z, xPast):
     """returns a list of possible x values for a given z"""
     possibleX = []
     # Find the roots of the first section of function and add them if the suitable
@@ -65,10 +81,16 @@ def ir4Inv(z):
         possibleX.append(endx1)
     if (endx2 > x0 and endx2 < 3.5):
         possibleX.append(endx2)
-    return possibleX
+    # Make sure that the estimate returned is the one closest to past estimate
+    X = possibleX[0]
+    for x in possibleX:
+        if abs(xPast - x) < abs(xPast - X):
+            X = x
+    return X
 
 ir4MeanE = -0.0016598
 ir4VarE = 0.0395728
+
 
 ##### Sonar Model ########################################
 a = 0.99499792
@@ -81,27 +103,66 @@ def sonarInv(z):
 
 sonarMeanE = -1.814182e-12
 sonarVarE = 0.007945636
+sonarInvVarE = a**2 * sonarVarE # Var(aX + b) = a^2*Var(X)
 
 ##### IR3 Model ###########################################
 a = 3.37323446
 b = -0.00565075
 c = 0.17960171
 d = -0.00724171
-def ir3(x, a, b, c, d):
+def ir3(x):
     return 1/(a*x + b) + c*x + d
 
-def ir3Inv(z):
+def ir3Inv(z, xPast):
+    """Take a measurement and past estimate and return estimate closest to last"""
     x1 = (-a*d + a*z - b*c)/(2*a*c) + np.sqrt((-a*d + a*z - b*c)**2 + 4*a*c*(-b*d + b*z -1))/(2*a*c)
     x2 = (-a*d + a*z - b*c)/(2*a*c) - np.sqrt((-a*d + a*z - b*c)**2 + 4*a*c*(-b*d + b*z -1))/(2*a*c) 
-    return x1, x2
+    if abs(xPast - x1) < abs(xPast - x2):
+        return x1
+    else:
+        return x2
 
+def derivativeIr3(x):
+    return -a/(a*x + b)**2 + c
+
+def linearIr3Var(x0, varX):
+    """Function linearises sensor model about x0 and calculates variance in Z based on linear model"""
+    # Taylor series with 2 terms [ h = h(x0)) + h'(x0)(x-x0) ] {ir3Inv(x0) + derivativeIr3(x0)*(x-x0)}
+    # turned into y = mx+k form:
+    m = derivativeIr3(x0)
+    k = ir3Inv(x0)-derivativeIr3(x0)*x0
+    varZ = m**2 * varX
+    return varZ
+    
 ir3MeanE = 6.8549e-10
 ir3VarE = 0.005288364
 
+
 ##### Testing #############################################
-zS = 0.1
-z4 = 3
-z3 = 0.5
-print("SONAR reading of {} gives estimation of {}".format(zS, sonarInv(zS)))
-print("IR4 reading of {} gives estimation of {}".format(z4, ir4Inv(z4)))
-print("IR3 reading of {} gives estimation of {}".format(z3, ir3Inv(z3)))
+# zS = 0.1
+# z4 = 3
+# z3 = 0.5
+# print("SONAR reading of {} gives estimation of {}".format(zS, sonarInv(zS)))
+# print("IR4 reading of {} gives estimation of {}".format(z4, ir4Inv(z4)))
+# print("IR3 reading of {} gives estimation of {}".format(z3, ir3Inv(z3)))
+
+# Each belief represented as a tuple with (mean, var)
+initialB = (0, 0)
+priorB = (0, 0)
+posteriorB = (1, 0)
+# print(posteriorB[0])
+
+for i in index:
+    dt = time[i+1]-time[i]
+    velocity = motion(velocity_command[i])
+    priorB[0] = initialB + velocity*time
+    priorB[1] = motionVarE
+
+    Xir3 = ir3Inv(raw_ir3[i], Xir3Past)
+    Xir4 = ir3Inv(raw_ir4[i], Xir4Past)
+    Xsonar = sonarInv(raw_ir3[i], XsonarPast)
+    Xir3Past = Xir3
+    Xir4Past = Xir4
+    XsonarPast = Xsonar
+
+    MLB = w1 * X1 + w2 * X2 + w3 * X3

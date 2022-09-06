@@ -41,9 +41,8 @@ print("a =", a, " b =", b)
 # Find velocity model by back solving using the relationship just found
 v_mod = [1/a*i-b for i in v_est] 
 error = v_com - v_mod
-
 # Plot results
-fig, axes = subplots(2)
+fig, axes = subplots(3)
 axes[0].plot(v_com, v_est, '.')
 axes[0].plot(v_com, fit)
 axes[0].set_xlabel('Commanded Velocity (m/s)')
@@ -52,6 +51,10 @@ axes[0].set_ylabel('Measured Velocity (m/s)')
 axes[1].hist(error, bins=100)
 axes[1].set_ylabel('Count')
 axes[1].set_xlabel('Error (m/s)')
+
+axes[2].plot(v_com, error, '.')
+axes[2].set_xlabel('Commanded Velocity (m/s)')
+axes[2].set_ylabel('Error (m/s)')
 
 fig, axes = subplots(2)
 axes[0].plot(time1, v_com1)
@@ -69,5 +72,44 @@ mean = np.mean(error)
 var = np.var(error)
 
 print("Mean =", mean, " Var =", var)
+
+########### Get Lookup tables for variances ################
+# Split error into N lists depending on the xList values assosiated
+def divide_chunks(xL, errorL, N):
+    """Function takes a list of errors and their assosiated positions in
+    x axis and returns a list of x divisions and the variances assosiated 
+    with each division"""
+    print("original list size of: {}".format(len(xL)))
+    splitList = []
+    splitError = []
+    # errors = []
+    div = (max(xL)-min(xL))/N
+    print("divider = {}".format(div))
+    for n in range(0, N):
+        xSection = []
+        errorSection = []
+        for i in range(0, len(xL)):
+            if xL[i] >= (min(xL) + n*div) and xL[i] < (min(xL) + (n+1)*div):
+                xSection.append(xL[i])
+                errorSection.append(errorL[i])
+        splitList.append(xSection)
+        splitError.append(errorSection)
+
+    # sum = 0
+    # for i in range(0, len(splitList)):
+    #     size = len(splitList[i])
+    #     sum += size
+    # print("sum of sections: {}".format(sum))
+    vars = []
+    xdivisions = np.linspace(min(xL), max(xL), N)
+    for e in splitError:
+        vars.append(np.var(e))
+    print("x lookup list is {}".format(xdivisions))
+    print("associated variances in error: {}".format(vars))
+    return xdivisions, vars
+
+n = 5
+X, E = divide_chunks(v_com, error, n)
+
 
 show()
