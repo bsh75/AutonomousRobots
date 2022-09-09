@@ -8,7 +8,7 @@ data = loadtxt(filename, delimiter=',', skiprows=1)
 
 # Split into columns
 index, time, dist, v_comm, raw_ir1, raw_ir2, raw_ir3, raw_ir4, \
-    sonar1, sonar2 = data.T
+    sonar1, sonar2 = data.T # add 'dist,' after time if using training datasets
 
 ##### Lookup Function and Tables ##########################
 # Lookup tables attained from 'divide_chunks' function in models
@@ -226,14 +226,14 @@ for i in index-1:
     VarBlu = 1/(1/VarIr3 + 1/VarIr4 + 1/VarSonar)
     
     # BLUE for combining sensor and motion
-    wMotion.append(1/priorVar/(1/VarBlu + 1/priorVar))
-    postX.append((1/VarBlu*XBlu + 1/priorVar*priorX)/(1/VarBlu + 1/priorVar))
-    postVar = 1/(1/VarBlu + 1/priorVar)
+    wMotion.append(1/priorVar[i]/(1/VarBlu + 1/priorVar[i]))
+    postX.append((1/VarBlu*XBlu + 1/priorVar[i]*priorX)/(1/VarBlu + 1/priorVar[i]))
+    postVar = 1/(1/VarBlu + 1/priorVar[i])
     initialX = postX[i]
     initialVar = postVar
-    postX.append(priorX)
-    initialX = postX[i]
-    initialVar = priorVar[i]
+    # postX.append(priorX)
+    # initialX = postX[i]
+    # initialVar = priorVar[i]
     
 
 print(len(time), len(postX))
