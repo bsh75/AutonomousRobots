@@ -23,7 +23,6 @@ variancesMotion = [0.0019200491161449286, 0.00123474268792669, 0.000255944735677
 
 def VarLookup(x, xLookup, variances):
     #if ((x >= min(xLookup)) and (x < max(xLookup))):
-        
     for i in range(0, len(xLookup)-1):
         # print(x, xLookup[i], xLookup[i+1])
         if (x >= xLookup[i]) and (x < xLookup[i+1]):
@@ -34,12 +33,12 @@ def VarLookup(x, xLookup, variances):
 
 ##### Motion Model (form motionCombined.py) ##################
 aM = 0.858707
-bM = -0.001387
+bM = 0 #-0.001387
 
 def motion(v_com, prevPos, dt):
     v = aM * v_com + bM
     newPos = prevPos + v * dt
-    print(v_com)
+    # print(v_com)
     # print(" new pos = {}".format(newPos))
     # print(" prev pos = {}".format(prevPos))
     # print(" v_com = {}".format(v_com))
@@ -206,38 +205,45 @@ for i in index-1:
     priorX = motion(v_comm[i], initialX, dt[i])
     priorVar.append(linearMotionVar(priorX, initialVar))
 
-    ### Update
-    Xir3 = ir3Inv(raw_ir3[i], Xir3Past)
-    Xir4 = ir4Inv(raw_ir4[i], Xir4Past)
-    Xsonar = sonarInv(sonar1[i])
-    # Past estimates used to find singular current estimate
-    Xir3Past = Xir3
-    Xir4Past = Xir4
+    # ### Update
+    # Xir3 = ir3Inv(raw_ir3[i], Xir3Past)
+    # Xir4 = ir4Inv(raw_ir4[i], Xir4Past)
+    # Xsonar = sonarInv(sonar1[i])
+    # # Past estimates used to find singular current estimate
+    # Xir3Past = Xir3
+    # Xir4Past = Xir4
     
-    VarIr3 = linearIr3Var(Xir3)
-    VarIr4 = linearIr4Var(Xir4)
-    VarSonar = linearSonarVar(Xsonar)
+    # VarIr3 = linearIr3Var(Xir3)
+    # VarIr4 = linearIr4Var(Xir4)
+    # VarSonar = linearSonarVar(Xsonar)
 
-    # BLUE for combining sensors
-    wIr3.append(1/VarIr3/(1/VarIr3 + 1/VarIr4 + 1/VarSonar))
-    wIr4.append(1/VarIr4/(1/VarIr3 + 1/VarIr4 + 1/VarSonar))
-    wSonar.append(1/VarSonar/(1/VarIr3 + 1/VarIr4 + 1/VarSonar))
-    XBlu = (1/VarIr3*Xir3 + 1/VarIr4*Xir4 + 1/VarSonar*Xsonar)/(1/VarIr3 + 1/VarIr4 + 1/VarSonar)
-    VarBlu = 1/(1/VarIr3 + 1/VarIr4 + 1/VarSonar)
+    # # BLUE for combining sensors
+    # wIr3.append(1/VarIr3/(1/VarIr3 + 1/VarIr4 + 1/VarSonar))
+    # wIr4.append(1/VarIr4/(1/VarIr3 + 1/VarIr4 + 1/VarSonar))
+    # wSonar.append(1/VarSonar/(1/VarIr3 + 1/VarIr4 + 1/VarSonar))
+    # XBlu = (1/VarIr3*Xir3 + 1/VarIr4*Xir4 + 1/VarSonar*Xsonar)/(1/VarIr3 + 1/VarIr4 + 1/VarSonar)
+    # VarBlu = 1/(1/VarIr3 + 1/VarIr4 + 1/VarSonar)
     
-    # BLUE for combining sensor and motion
-    wMotion.append(1/priorVar[i]/(1/VarBlu + 1/priorVar[i]))
-    postX.append((1/VarBlu*XBlu + 1/priorVar[i]*priorX)/(1/VarBlu + 1/priorVar[i]))
-    postVar = 1/(1/VarBlu + 1/priorVar[i])
-    initialX = postX[i]
-    initialVar = postVar
-    # postX.append(priorX)
+    # # BLUE for combining sensor and motion
+    # wMotion.append(1/priorVar[i]/(1/VarBlu + 1/priorVar[i]))
+    # postX.append((1/VarBlu*XBlu + 1/priorVar[i]*priorX)/(1/VarBlu + 1/priorVar[i]))
+    # postVar = 1/(1/VarBlu + 1/priorVar[i])
     # initialX = postX[i]
-    # initialVar = priorVar[i]
-    
+    # initialVar = postVar
 
-print(len(time), len(postX))
-plot(time, postX)
+    postX.append(priorX)
+    initialX = postX[i]
+    initialVar = priorVar[i]
+    
+M = 2000 #len(time)
+x = time[:M]
+y = postX[:M]
+y1 = v_comm[:M]
+print(y, y1)
+fig, axes = subplots(2)
+axes[0].plot(x, y)
+axes[0].plot(x, y1)
+
 # plot(time, priorVar)
 # fig, axes = subplots(4)
 # axes[0].plot(time, wIr3)

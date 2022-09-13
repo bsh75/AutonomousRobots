@@ -135,12 +135,12 @@ def sensor_model(particle_poses, beacon_pose, beacon_loc):
 
     return particle_weights
     
-        for m in range(M-1):
-        r_particle[m] = np.sqrt((beacon_loc[0]-particle_poses[m,0])**2 + (beacon_loc[1]-particle_poses[m,1])**2)
-        phi_particle[m] = angdiff(np.arctan2((beacon_loc[1]-particle_poses[m,1]),(beacon_loc[0]-particle_poses[m,0])),particle_poses[m,2])
-        r_error = r-r_particle[m] 
-        phi_error = phi - phi_particle[m]
-        particle_weights[m] = r_error*phi_error # r and phi errors need to be probability density functions, how do you implenet that in python?
+    #     for m in range(M-1):
+    #     r_particle[m] = np.sqrt((beacon_loc[0]-particle_poses[m,0])**2 + (beacon_loc[1]-particle_poses[m,1])**2)
+    #     phi_particle[m] = angdiff(np.arctan2((beacon_loc[1]-particle_poses[m,1]),(beacon_loc[0]-particle_poses[m,0])),particle_poses[m,2])
+    #     r_error = r-r_particle[m] 
+    #     phi_error = phi - phi_particle[m]
+    #     particle_weights[m] = r_error*phi_error # r and phi errors need to be probability density functions, how do you implenet that in python?
 
-    return particle_weights
+    # return particle_weights
     
