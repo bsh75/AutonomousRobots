@@ -31,7 +31,6 @@ axes[0].plot(x, y, '.')
 axes[0].plot(x, IRfit, '.' )
 axes[0].set_title('IR3 raw data')
 
-
 axes[1].plot(x, IRerror, '.')
 axes[1].set_title('measurement error')
 

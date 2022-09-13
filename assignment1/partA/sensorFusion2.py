@@ -152,6 +152,7 @@ def sonarInv(z):
 def linearSonarVar(x0):
     varZ = sonarVarE #VarLookup(x0, xLookupSonar, variancesSonar)
     sonarVarX = varZ/aS**2  # Var(aX + b) = a^2*Var(X)
+    print(sonarVarX)
     return sonarVarX
 
 ##### IR3 Model ###########################################
@@ -206,6 +207,7 @@ initialX = 0
 initialVar = 0
 Xir3Past = initialX
 Xir4Past = initialX
+XsonarPast = initialX
 postXL = []
 priorXL = []
 wIr3 = []
@@ -215,6 +217,7 @@ K1s = []
 dt = time[1:] - time[0:-1]
 
 priorVarL = []
+sonarVarL = []
 
 for i in range(0, len(index)):
     ### Predict
@@ -226,17 +229,16 @@ for i in range(0, len(index)):
     # postVar = priorVar
     
     ### Update
-    Xir3 = ir3Inv(raw_ir3[i], Xir3Past)
-    VarIr3 = linearIr3Var(Xir3)
-    if Xir3 <= ir3Min and Xir3 >= ir3Max:
-        VarIr3 = 100
+    Xsonar = sonarInv(sonar1[i])
+    VarSonar = linearSonarVar(Xsonar)
+    sonarVarL.append(VarSonar)
 
-    Xir3Past = Xir3
+    XsonarPast = Xsonar
 
-    K1 = (1/VarIr3)/(1/priorVar + 1/VarIr3)
+    K1 = (1/VarSonar)/(1/priorVar + 1/VarSonar)
     K1s.append(K1)
-    postX = (K1)*Xir3 + (1-K1)*priorX
-    postVar = 1/(1/VarIr3 + 1/priorVar)
+    postX = (K1)*Xsonar + (1-K1)*priorX
+    postVar = 1/(1/VarSonar + 1/priorVar)
 
     postXL.append(postX)
     initialX = postX
@@ -269,7 +271,9 @@ for i in range(0, len(index)):
     # initialVar = postVar
    
 # print(priorVarL[0])
-plot(time, priorVarL)
+fig1, axes1 = subplots(2)
+axes1[0].plot(time, priorVarL)
+axes1[1].plot(time, sonarVarL)
 m = 1
 M = -1 #len(time)
 x = time[m:M]
