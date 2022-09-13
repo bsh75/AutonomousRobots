@@ -3,7 +3,7 @@ import numpy as np
 from numpy import loadtxt
 from matplotlib.pyplot import plot, subplots, show
 
-filename = 'assignment1/partA/training1.csv'
+filename = 'partA/training1.csv'
 data = loadtxt(filename, delimiter=',', skiprows=1)
 
 # Split into columns
@@ -35,19 +35,30 @@ def VarLookup(x, xLookup, variances):
 aM = 0.858707
 bM = 0 #-0.001387
 
-def motion(v_com, prevPos, dt):
-    v = aM * v_com + bM
+motionMeanE = 0.000228
+motionVarE = 0.00053
+
+def motion(v_com, prevPos, dt, VarPrevious):
+    # Find better estimation of actual speed
+    if v_com == 0:
+        v = 0
+    else:
+        v = aM * v_com + bM
+
+    # Find new position using this speed
     newPos = prevPos + v * dt
+    # aPredict = newPos/prevPos # this is done to find scalar between past and new
+
+    # Find variance: Var(aX + b) = a^2*Var(X) but a = 1 cause no relationship between past pos and 
+    motionVarX = VarPrevious + motionVarE #VarLookup(newPos, xLookupMotion, variancesMotion) 
+    # print(VarPrevious)
     # print(v_com)
     # print(" new pos = {}".format(newPos))
     # print(" prev pos = {}".format(prevPos))
     # print(" v_com = {}".format(v_com))
     # print(dt)
+    return newPos, motionVarX
 
-    return newPos
-
-motionMeanE = 0.000228
-motionVarE = 0.00053
 
 def linearMotionVar(x0, VarPrevious):
     processVar = motionVarE #VarLookup(x0, xLookupMotion, variancesMotion)
@@ -197,13 +208,23 @@ wSonar = []
 wMotion = []
 dt = time[1:] - time[0:-1]
 
-priorVar = []
+priorVarL = []
 
-for i in index-1:
-    i = int(i)
+for i in range(0, len(index)):
     ### Predict
-    priorX = motion(v_comm[i], initialX, dt[i])
-    priorVar.append(linearMotionVar(priorX, initialVar))
+    priorX, priorVar = motion(v_comm[i], initialX, dt[i-1], initialVar) # Why does making this dt[i] make the graph go spaggy
+    priorVarL.append(priorVar)
+
+    Xir3 = ir3Inv(raw_ir3[i], Xir3Past)
+    Xir3Past = Xir3
+    VarIr3 = linearIr3Var(Xir3)
+
+    XBlu = (1/VarIr3*Xir3 + 1/priorVar*priorX)/(1/VarIr3 + 1/priorVar)
+    VarBlu = 1/(1/VarIr3 + 1/priorVar)
+
+    postX.append(XBlu)
+    initialX = postX[i]
+    initialVar = priorVar
 
     # ### Update
     # Xir3 = ir3Inv(raw_ir3[i], Xir3Past)
@@ -225,24 +246,34 @@ for i in index-1:
     # VarBlu = 1/(1/VarIr3 + 1/VarIr4 + 1/VarSonar)
     
     # # BLUE for combining sensor and motion
-    # wMotion.append(1/priorVar[i]/(1/VarBlu + 1/priorVar[i]))
-    # postX.append((1/VarBlu*XBlu + 1/priorVar[i]*priorX)/(1/VarBlu + 1/priorVar[i]))
-    # postVar = 1/(1/VarBlu + 1/priorVar[i])
+    # wMotion.append(1/priorVarL[i]/(1/VarBlu + 1/priorVarL[i]))
+    # postX.append((1/VarBlu*XBlu + 1/priorVarL[i]*priorX)/(1/VarBlu + 1/priorVarL[i]))
+    # postVar = 1/(1/VarBlu + 1/priorVarL[i])
     # initialX = postX[i]
     # initialVar = postVar
 
-    postX.append(priorX)
-    initialX = postX[i]
-    initialVar = priorVar[i]
+
     
-M = 2000 #len(time)
-x = time[:M]
-y = postX[:M]
-y1 = v_comm[:M]
-print(y, y1)
+# print(priorVarL[0])
+plot(time, priorVarL)
+m = 1
+M = -1 #len(time)
+x = time[m:M]
+y = postX[m:M]
+y1 = v_comm[m:M]
+# y2 = priorVar[m,]
+# print(y1)
 fig, axes = subplots(2)
 axes[0].plot(x, y)
-axes[0].plot(x, y1)
+axes[1].plot(x, y1)
+
+
+newL = []
+for i in range(m, M):
+    new, var = motion(v_comm[i], postX[i-1], dt[1], initialVar)
+    print(new, "===", postX[i], "com", v_comm[i])
+
+# print(new, postX[m:M])
 
 # plot(time, priorVar)
 # fig, axes = subplots(4)
