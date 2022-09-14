@@ -168,6 +168,7 @@ def ir3(x):
 def derivativeIr3(x):
     return -a3/(a3*x + b3)**2 + c3
 
+
 def ir3Inv(z, x0):
     """Take a measurement and past estimate and return estimate closest to last"""
     # Choose between two roots of inverted equation
@@ -181,7 +182,9 @@ def ir3Inv(z, x0):
     # print(x0)
     # Decide if measurement is an outlier
     if (math.isnan(xIr3)):
+        # print(xIr3)
         xIr3 = x0
+        Ir3varX = 100
     if (xIr3 <= ir3Min) or (xIr3 >= ir3Max):
         Ir3varX = 1000
         # xIr3 = x0
@@ -279,10 +282,15 @@ for i in range(0, len(index)):
     ir3XL.append(Xir3)
     ir3VarL.append(VarIr3)
 
-    K1 = (1/VarIr3)/(1/priorVar + 1/VarIr3)
-    K1s.append(K1)
-    postX = (K1)*Xir3 + (1-K1)*priorX
-    postVar = 1/(1/VarIr3 + 1/priorVar)
+    # K1 = (1/VarIr3)/(1/priorVar + 1/VarIr3)
+    # K1s.append(K1)
+    # postX = (K1)*Xir3 + (1-K1)*priorX
+    wIr3.append(1/VarIr3/(1/VarIr3 + 1/priorVar + 1/VarSonar))
+    wSonar.append(1/VarSonar/(1/VarIr3 + 1/priorVar + 1/VarSonar))
+    K1s.append(1/priorVar/(1/VarIr3 + 1/priorVar + 1/VarSonar))
+
+    postX = (1/VarIr3*Xir3 + 1/priorVar*priorX + 1/VarSonar*Xsonar)/(1/VarIr3 + 1/priorVar + 1/VarSonar)
+    postVar = 1/(1/VarIr3 + 1/priorVar + 1/VarSonar)
 
     postXL.append(postX)
     initialX = postX
@@ -339,9 +347,12 @@ axes[0].plot(x, y)
 axes[0].set_ylabel('Displacement (m)')
 axes[1].plot(x, y1)
 axes[1].set_ylabel('Velocity (m/s)')
-axes[2].plot(x, y2)
+axes[2].plot(x, wSonar[:-1])
+axes[2].plot(x, wIr3[:-1])
+axes[2].plot(x, K1s[:-1])
 axes[2].set_ylabel('Scalar (K1)')
 axes[2].set_xlabel('Time (s)')
+axes[2].legend(["Sonar", "wIr3", "Motion"])
 
 newL = []
 for i in range(m, M):

@@ -142,7 +142,7 @@ def sonarInv(z, x0):
     else:
         diff = abs(xS-x0)
         std = np.sqrt(sonarVarX)
-        if diff > 2*std :
+        if diff > 3*std :
             xS = x0
             sonarVarX = 50
 
@@ -305,6 +305,7 @@ y2 = K1s[m:M]
 # print(y1)
 fig, axes = subplots(3)
 axes[0].plot(x, y)
+axes[0].plot(x, dist[:-1])
 # axes[0].plot(x, y3)
 # axes[0].plot(time, sonarXL)
 axes[0].set_ylabel('Displacement (m)')
