@@ -120,7 +120,7 @@ def ir4Inv(z, x0):
         # No root from calc give high variance but last position
         xIr4 = x0
         ir4VarX = 100
-        
+
     # print(xIr4)
     return xIr4, ir4VarX
 
@@ -310,7 +310,7 @@ for i in range(0, len(index)):
     # K1 = (1/VarIr3)/(1/priorVar + 1/VarIr3)
     # K1s.append(K1)
     # postX = (K1)*Xir3 + (1-K1)*priorX
-    wIr3.append(1/VarIr4/(1/VarIr4 + 1/priorVar + 1/VarSonar))
+    wIr4.append(1/VarIr4/(1/VarIr4 + 1/priorVar + 1/VarSonar))
     wSonar.append(1/VarSonar/(1/VarIr4 + 1/priorVar + 1/VarSonar))
     K1s.append(1/priorVar/(1/VarIr4 + 1/priorVar + 1/VarSonar))
 
@@ -351,10 +351,10 @@ for i in range(0, len(index)):
 fig1, axes1 = subplots(3)
 axes1[0].plot(time, priorVarL)
 axes1[0].set_ylabel('priorVar')
-axes1[1].plot(time, ir3VarL)
-axes1[1].set_ylabel('ir3Var')
-axes1[2].plot(time, ir3XL)
-axes1[2].set_ylabel('ir3Est')
+axes1[1].plot(time, ir4VarL)
+axes1[1].set_ylabel('ir4Var')
+axes1[2].plot(time, ir4XL)
+axes1[2].set_ylabel('ir4Est')
 axes1[2].set_xlabel('Time (s)')
 
 m = 0
@@ -373,11 +373,11 @@ axes[0].set_ylabel('Displacement (m)')
 axes[1].plot(x, y1)
 axes[1].set_ylabel('Velocity (m/s)')
 axes[2].plot(x, wSonar[:-1])
-axes[2].plot(x, wIr3[:-1])
+axes[2].plot(x, wIr4[:-1])
 axes[2].plot(x, K1s[:-1])
 axes[2].set_ylabel('Scalar (K1)')
 axes[2].set_xlabel('Time (s)')
-axes[2].legend(["Sonar", "wIr3", "Motion"])
+axes[2].legend(["Sonar", "wIr4", "Motion"])
 
 newL = []
 for i in range(m, M):
