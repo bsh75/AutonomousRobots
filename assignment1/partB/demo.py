@@ -35,7 +35,7 @@ data = np.genfromtxt('assignment1/partB/data.csv', delimiter=',', skip_header=1)
 # Time in ns
 t = data[:, 0]
 
-# Velocity command in m/s, rotation command in rad/s
+# Velocity command in m/s, rotation command in rad/sqq
 commands = data[:, 1:3]
 
 # Position in map frame, from SLAM (this approximates ground truth)
@@ -97,7 +97,7 @@ axes.figure.canvas.flush_events()
 start_step = 50
 
 # TODO: Number of particles, you may need more or fewer!
-Nparticles = 100
+Nparticles = 50
 
 # TODO: How many steps between display updates
 display_steps = 10
@@ -144,9 +144,11 @@ for n in range(start_step + 1, Nposes):
 
         # TODO: write sensor model function in models.py
         weights *= sensor_model(poses, beacon_pose, beacon_loc)
+        #print("weights = {}".format(weights))
 
         if sum(weights) < 1e-50:
             print('All weights are close to zero, you are lost...')
+            #weights = np.ones(Nparticles)
             # TODO: Do something to recover
             
             break

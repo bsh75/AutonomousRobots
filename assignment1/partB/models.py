@@ -69,16 +69,13 @@ def motion_model(particle_poses, speed_command, odom_pose, odom_pose_prev, dt):
         # x(m)n = x(m)n-1 + g(x(m)n-1, un-1) + w(m)n
 
         # Add gaussian additive noise in x direction
-        particle_poses[m, 0] += randn(1) * 0.1
+        particle_poses[m, 0] += randn(1) * 0.01
         particle_poses[m, 1] += randn(1) * 0.05
 
         # Particles move in the -y direction   WHY IS THE GRAPH X AND Y OPPOSITE TO WHAT YOUD EXPECT FOR A MAP!!!!
         #particle_poses[m, 1] -= 0.1
 
     return particle_poses
-
-def angdiff(theta1, theta2):
-    return min(2*np.pi-(theta1-theta2),theta1-theta2)
 
 def sensor_model(particle_poses, beacon_pose, beacon_loc):
     """Apply sensor model and return particle weights.
@@ -113,38 +110,46 @@ def sensor_model(particle_poses, beacon_pose, beacon_loc):
     # the relative beacon pose, and the beacon location.
 
     #Implementing equations from multivariate particle filter notes (pg 115-116)
-    r_noise = np.random.normal(0,1)
-    phi_noise = np.random.normal(0,1)
 
 
+    r_std = 0.1
+    phi_std = 0.1
     #calculate range and bearing w.r.t robot given est beacon poses
-    r = np.sqrt(beacon_pose[0]**2 + beacon_pose[1]**2) + np.random.normal(0,1)
-    phi = np.arctan2(beacon_pose[1],beacon_pose[0]) + np.random.normal(0,1)
+    r = np.sqrt(beacon_pose[0]**2 + beacon_pose[1]**2) #+ random.gauss(0,r_std)
+    phi = np.arctan2(beacon_pose[1],beacon_pose[0]) #+ random.gauss(0,phi_std)
 
     r_particle = np.zeros(M)
     phi_particle = np.zeros(M)
 
-    # print(r_particle[0])
-    # print(particle_poses[0])
-    # print(particle_poses[0][0])
-    
-    #for m in range(M-1):
-     #   r_particle[m] = np.sqrt((beacon_loc[0]-particle_poses[m][0])**2 + (beacon_loc[1]-particle_poses[m][1])**2)
-      #  phi_particle[m] = angdiff(np.arctan2((beacon_loc[1]-particle_poses[m][1]),(beacon_loc[0]-particle_poses[m][0])),particle_poses[m][2])
-       # r_error = r-r_particle[m]
-        #phi_error = phi - phi_particle[m]
-        #particle_weights[m] = r_error*phi_error # r and phi errors need to be probability density functions, how do you implenet that in python?
+    r_error = np.zeros(M)
+    phi_error = np.zeros(M)
 
+    r_var = np.zeros(M)
+    phi_var = np.zeros(M)
+
+
+   
+    #for m in range(M-1):
+     #   particle_weights[m] = 1
     #return particle_weights
-    range_std = 4
-    phi_std = 3
+
+
+
     
     for m in range(M-1):
         r_particle[m] = np.sqrt((beacon_loc[0]-particle_poses[m,0])**2 + (beacon_loc[1]-particle_poses[m,1])**2) 
-        phi_particle[m] = angdiff(np.arctan2((beacon_loc[1]-particle_poses[m,1]),(beacon_loc[0]-particle_poses[m,0])), particle_poses[m,2]) 
-        r_error = r - r_particle[m] 
-        phi_error = angdiff(phi_particle[m],phi)
-        particle_weights[m] = gauss(r_error,range_std)*gauss(phi_error,phi_std)# r and phi errors need to be probability density functions, how do you implenet that in python?
-    print(" particle_weights = {}".format(particle_weights))
+        phi_particle[m] = angle_difference(particle_poses[m,2],np.arctan2((beacon_loc[1]-particle_poses[m,1]),(beacon_loc[0]-particle_poses[m,0]))) 
+        r_error[m] = r - r_particle[m] 
+        #print("range error = {}". format(r_error[m]))
+        phi_error[m] = angle_difference(phi_particle[m],phi)
+        #print("bearing error = {}". format(phi_error[m]))
+        r_var[m] = np.var(r_particle[m])
+        phi_var[m] = np.var(phi_particle[m])
+        #particle_weights[m] = gauss(r_error[m],r_var[m],r_std)*gauss(phi_error[m],phi_var[m],phi_std)# r and phi errors need to be probability density functions, how do you implenet that in python?
+        particle_weights[m] = gauss(r_error[m],0,r_std)*gauss(phi_error[m],0,phi_std)
+        #print(" particle_weights = {}".format(particle_weights[m]))
     return particle_weights
+
+ 
     
+ 
