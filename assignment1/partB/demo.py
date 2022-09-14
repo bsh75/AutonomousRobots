@@ -148,6 +148,7 @@ for n in range(start_step + 1, Nposes):
         if sum(weights) < 1e-50:
             print('All weights are close to zero, you are lost...')
             # TODO: Do something to recover
+            
             break
 
         if is_degenerate(weights):
