@@ -106,7 +106,7 @@ def ir4Inv(z, x0):
                 xIr4 = x
         # Check that its within the range of the sensor
         if (xIr4 <= ir4Min) or (xIr4 >= ir4Max):
-            ir4VarX = 1000
+            ir4VarX = 220
             # xIr4 = x0
         else:
             # Outlier Rejection
@@ -115,11 +115,11 @@ def ir4Inv(z, x0):
             std = np.sqrt(ir4VarX)
             if diff > 3*std :
                 # xIr4 = x0
-                ir4VarX = 500
+                ir4VarX = 210
     else:
         # No root from calc give high variance but last position
         xIr4 = x0
-        ir4VarX = 100
+        ir4VarX = 200
 
     # print(xIr4)
     return xIr4, ir4VarX
@@ -299,21 +299,23 @@ for i in range(0, len(index)):
     sonarVarL.append(VarSonar)
     # IR3
     # # print(priorX)
-    Xir3, VarIr3 = ir3Inv(raw_ir3[i], priorX)
-    ir3XL.append(Xir3)
-    ir3VarL.append(VarIr3)
+    # Xir3, VarIr3 = ir3Inv(raw_ir3[i], priorX)
+    # ir3XL.append(Xir3)
+    # ir3VarL.append(VarIr3)
     # IR4
     Xir4, VarIr4 = ir4Inv(raw_ir4[i], priorX)
     ir4XL.append(Xir4)
     ir4VarL.append(VarIr4)
 
-    wIr4.append(1/VarIr4/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3))
-    wIr3.append(1/VarIr3/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3))
-    wSonar.append(1/VarSonar/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3))
-    K1s.append(1/priorVar/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3)) 
+    # K1 = (1/VarIr3)/(1/priorVar + 1/VarIr3)
+    # K1s.append(K1)
+    # postX = (K1)*Xir3 + (1-K1)*priorX
+    wIr4.append(1/VarIr4/(1/VarIr4 + 1/priorVar + 1/VarSonar))
+    wSonar.append(1/VarSonar/(1/VarIr4 + 1/priorVar + 1/VarSonar))
+    K1s.append(1/priorVar/(1/VarIr4 + 1/priorVar + 1/VarSonar))
 
-    postX = (1/VarIr4*Xir4 + 1/priorVar*priorX + 1/VarSonar*Xsonar + 1/VarIr3*Xir3)/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3)
-    postVar = 1/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3)
+    postX = (1/VarIr4*Xir4 + 1/priorVar*priorX + 1/VarSonar*Xsonar)/(1/VarIr4 + 1/priorVar + 1/VarSonar)
+    postVar = 1/(1/VarIr4 + 1/priorVar + 1/VarSonar)
 
     postXL.append(postX)
     initialX = postX
@@ -346,37 +348,36 @@ for i in range(0, len(index)):
     # initialVar = postVar
 
 # print(ir3VarL)
-fig1, axes1 = subplots(4)
+fig1, axes1 = subplots(3)
 axes1[0].plot(time, priorVarL)
 axes1[0].set_ylabel('priorVar')
 axes1[1].plot(time, ir4VarL)
 axes1[1].set_ylabel('ir4Var')
-axes1[2].plot(time, ir3VarL)
-axes1[2].set_ylabel('ir3VarL')
-axes1[3].plot(time, sonarVarL)
-axes1[3].set_ylabel('sonarVarL')
-axes1[3].set_xlabel('Time (s)')
+axes1[2].plot(time, ir4XL)
+axes1[2].set_ylabel('ir4Est')
+axes1[2].set_xlabel('Time (s)')
 
 m = 0
 M = -1 #len(time)
 x = time[m:M]
-
+y = postXL[m:M]
+y1 = v_comm[m:M]
+y2 = K1s[m:M]
 # y3 = priorXL[m:M]
 # print(y1)
 fig, axes = subplots(3)
-axes[0].plot(x, postXL[m:M])
+axes[0].plot(x, y)
 # axes[0].plot(x, y3)
 # axes[0].plot(time, sonarXL)
 axes[0].set_ylabel('Displacement (m)')
-axes[1].plot(x, v_comm[m:M])
+axes[1].plot(x, y1)
 axes[1].set_ylabel('Velocity (m/s)')
-axes[2].plot(x, wSonar[m:M])
-axes[2].plot(x, wIr4[m:M])
-axes[2].plot(x, K1s[m:M])
-axes[2].plot(x, wIr3[m:M])
+axes[2].plot(x, wSonar[:-1])
+axes[2].plot(x, wIr4[:-1])
+axes[2].plot(x, K1s[:-1])
 axes[2].set_ylabel('Scalar (K1)')
 axes[2].set_xlabel('Time (s)')
-axes[2].legend(["Sonar", "wIr4", "Motion", "wIr4"])
+axes[2].legend(["Sonar", "wIr4", "Motion"])
 
 newL = []
 for i in range(m, M):

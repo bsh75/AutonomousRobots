@@ -294,9 +294,9 @@ for i in range(0, len(index)):
     
     ### Update
     # Sonar
-    Xsonar, VarSonar = sonarInv(sonar1[i], priorX)
-    sonarXL.append(Xsonar)
-    sonarVarL.append(VarSonar)
+    # Xsonar, VarSonar = sonarInv(sonar1[i], priorX)
+    # sonarXL.append(Xsonar)
+    # sonarVarL.append(VarSonar)
     # IR3
     # # print(priorX)
     Xir3, VarIr3 = ir3Inv(raw_ir3[i], priorX)
@@ -307,94 +307,45 @@ for i in range(0, len(index)):
     ir4XL.append(Xir4)
     ir4VarL.append(VarIr4)
 
-    wIr4.append(1/VarIr4/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3))
-    wIr3.append(1/VarIr3/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3))
-    wSonar.append(1/VarSonar/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3))
-    K1s.append(1/priorVar/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3)) 
+    wIr4.append(1/VarIr4/(1/VarIr4 + 1/priorVar + 1/VarIr3))
+    wIr3.append(1/VarIr3/(1/VarIr4 + 1/priorVar + 1/VarIr3))
+    # wSonar.append(1/VarSonar/(1/VarIr4 + 1/priorVar + 1/VarIr3))
+    K1s.append(1/priorVar/(1/VarIr4 + 1/priorVar + 1/VarIr3)) 
 
-    postX = (1/VarIr4*Xir4 + 1/priorVar*priorX + 1/VarSonar*Xsonar + 1/VarIr3*Xir3)/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3)
-    postVar = 1/(1/VarIr4 + 1/priorVar + 1/VarSonar + 1/VarIr3)
+    postX = (1/VarIr4*Xir4 + 1/priorVar*priorX + 1/VarIr4*Xir4)/(1/VarIr4 + 1/priorVar + 1/VarIr3)
+    postVar = 1/(1/VarIr4 + 1/priorVar + 1/VarIr3)
 
     postXL.append(postX)
     initialX = postX
     initialVar = postVar
 
-    # ### Update
-    # Xir3 = ir3Inv(raw_ir3[i], Xir3Past)
-    # Xir4 = ir4Inv(raw_ir4[i], Xir4Past)
-    # Xsonar = sonarInv(sonar1[i])
-    # # Past estimates used to find singular current estimate
-    # Xir3Past = Xir3
-    # Xir4Past = Xir4
-    
-    # VarIr3 = linearIr3Var(Xir3)
-    # VarIr4 = linearIr4Var(Xir4)
-    # VarSonar = linearSonarVar(Xsonar)
-
-    # # BLUE for combining sensors
-    # wIr3.append(1/VarIr3/(1/VarIr3 + 1/VarIr4 + 1/VarSonar))
-    # wIr4.append(1/VarIr4/(1/VarIr3 + 1/VarIr4 + 1/VarSonar))
-    # wSonar.append(1/VarSonar/(1/VarIr3 + 1/VarIr4 + 1/VarSonar))
-    # XBlu = (1/VarIr3*Xir3 + 1/VarIr4*Xir4 + 1/VarSonar*Xsonar)/(1/VarIr3 + 1/VarIr4 + 1/VarSonar)
-    # VarBlu = 1/(1/VarIr3 + 1/VarIr4 + 1/VarSonar)
-    
-    # # BLUE for combining sensor and motion
-    # wMotion.append(1/priorVarL[i]/(1/VarBlu + 1/priorVarL[i]))
-    # postX.append((1/VarBlu*XBlu + 1/priorVarL[i]*priorX)/(1/VarBlu + 1/priorVarL[i]))
-    # postVar = 1/(1/VarBlu + 1/priorVarL[i])
-    # initialX = postX[i]
-    # initialVar = postVar
 
 # print(ir3VarL)
-fig1, axes1 = subplots(4)
+fig1, axes1 = subplots(3)
 axes1[0].plot(time, priorVarL)
 axes1[0].set_ylabel('priorVar')
 axes1[1].plot(time, ir4VarL)
 axes1[1].set_ylabel('ir4Var')
-axes1[2].plot(time, ir3VarL)
-axes1[2].set_ylabel('ir3VarL')
-axes1[3].plot(time, sonarVarL)
-axes1[3].set_ylabel('sonarVarL')
-axes1[3].set_xlabel('Time (s)')
+axes1[2].plot(time, ir4XL)
+axes1[2].set_ylabel('ir4Est')
+axes1[2].set_xlabel('Time (s)')
 
 m = 0
 M = -1 #len(time)
 x = time[m:M]
 
-# y3 = priorXL[m:M]
-# print(y1)
 fig, axes = subplots(3)
 axes[0].plot(x, postXL[m:M])
-# axes[0].plot(x, y3)
-# axes[0].plot(time, sonarXL)
 axes[0].set_ylabel('Displacement (m)')
 axes[1].plot(x, v_comm[m:M])
 axes[1].set_ylabel('Velocity (m/s)')
-axes[2].plot(x, wSonar[m:M])
+# axes[2].plot(x, wSonar[m:M])
 axes[2].plot(x, wIr4[m:M])
 axes[2].plot(x, K1s[m:M])
 axes[2].plot(x, wIr3[m:M])
 axes[2].set_ylabel('Scalar (K1)')
 axes[2].set_xlabel('Time (s)')
 axes[2].legend(["Sonar", "wIr4", "Motion", "wIr4"])
-
-newL = []
-for i in range(m, M):
-    new, var = motion(v_comm[i], postXL[i-1], dt[i-1], initialVar)
-    # print(new, "===", postXL[i], "com", v_comm[i])
-
-# print(new, postX[m:M])
-
-# plot(time, priorVar)
-# fig, axes = subplots(4)
-# axes[0].plot(time, wIr3)
-# axes[0].set_ylabel('wIr3')
-# axes[1].plot(time, wIr4)
-# axes[1].set_ylabel('wIr4')
-# axes[2].plot(time, wSonar)
-# axes[2].set_ylabel('wSonar')
-# axes[3].plot(time, wMotion)
-# axes[3].set_ylabel('wMotion')
 
 
 show()
