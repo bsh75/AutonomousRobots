@@ -2,6 +2,7 @@ from tkinter import W, Y
 import numpy as np
 from numpy import loadtxt
 from matplotlib.pyplot import plot, subplots, show
+import math
 
 filename = 'assignment1/partA/training1.csv'
 data = loadtxt(filename, delimiter=',', skiprows=1)
@@ -10,26 +11,6 @@ data = loadtxt(filename, delimiter=',', skiprows=1)
 index, time, dist, v_comm, raw_ir1, raw_ir2, raw_ir3, raw_ir4, \
     sonar1, sonar2 = data.T # add 'dist,' after time if using training datasets
 
-##### Lookup Function and Tables ##########################
-# Lookup tables attained from 'divide_chunks' function in models
-xLookupIr3 = [0.09679938, 0.90525033, 1.71370128, 2.52215223, 3.33060318]
-variancesIr3 = [0.004826065829283602, 0.004357475760755817, 0.005871319309306362, 0.004765047580434493, 0.006197931690626443]
-xLookupIr4 = [0.09679938, 0.90525033, 1.71370128, 2.52215223, 3.33060318]
-variancesIr4 = [0.12220775598917524, 0.015966623766261956, 0.012969067620212034, 0.019064140416456637, 0.022062251790182192]
-xLookupSonar = [0.09679938, 0.90525033, 1.71370128, 2.52215223, 3.33060318]
-variancesSonar = [2.281659850515315e-05, 1.7174942189593155e-05, 3.873231279068888e-05, 0.00011085378539295636, 0.00013254441517565623]
-xLookupMotion = [-0.53948363, -0.27169283, -0.00390204,  0.26388876,  0.53167956]
-variancesMotion = [0.0019200491161449286, 0.00123474268792669, 0.0002559447356770384, 0.0009352631546926811, 0.0014164489783990344]
-
-def VarLookup(x, xLookup, variances):
-    #if ((x >= min(xLookup)) and (x < max(xLookup))):
-    for i in range(0, len(xLookup)-1):
-        # print(x, xLookup[i], xLookup[i+1])
-        if (x >= xLookup[i]) and (x < xLookup[i+1]):
-            # print("Var = {}".format(variances[i]))
-
-            Var = variances[i]
-    return Var
 
 ##### Motion Model (form motionCombined.py) ##################
 aM = 0.858707
@@ -92,6 +73,9 @@ x04 = 0.8
 ir4MeanE = -0.0016598
 ir4VarE = 0.0395728
 
+ir4Min = 1
+ir4Max = 5
+
 def ir4(x):
     if x <= x04:
         z = a4 * x**4 + b4 * x**3 + c4 * x**2 + d4 * x + e4
@@ -143,16 +127,28 @@ bS = -0.01731528
 sonarMeanE = -1.814182e-12
 sonarVarE = 0.007945636
 
+sonarMin = 0.02
+sonarMax = 4
+
 def sonar(x):
     return  aS * x + bS
 
-def sonarInv(z):
-    return (z - bS)/aS
-
-def linearSonarVar(x0):
+def sonarInv(z, x0):
+    xS = (z - bS)/aS
     varZ = sonarVarE #VarLookup(x0, xLookupSonar, variancesSonar)
     sonarVarX = varZ/aS**2  # Var(aX + b) = a^2*Var(X)
-    return sonarVarX
+    
+    if (xS <= sonarMin) or (xS >= sonarMax):
+        sonarVarX = 100
+    else:
+        diff = abs(xS-x0)
+        std = np.sqrt(sonarVarX)
+        if diff > 2*std :
+            xS = x0
+            sonarVarX = 50
+
+    return xS, sonarVarX
+
 
 ##### IR3 Model ###########################################
 a3 = 3.37323446
@@ -169,19 +165,36 @@ ir3VarE = 0.005288364
 def ir3(x):
     return 1/(a3*x + b3) + c3*x + d3
 
-def ir3Inv(z, xPast):
+def derivativeIr3(x):
+    return -a3/(a3*x + b3)**2 + c3
+
+def ir3Inv(z, x0):
     """Take a measurement and past estimate and return estimate closest to last"""
+    # Choose between two roots of inverted equation
     x1 = (-a3*d3 + a3*z - b3*c3)/(2*a3*c3) + np.sqrt((-a3*d3 + a3*z - b3*c3)**2 + 4*a3*c3*(-b3*d3 + b3*z -1))/(2*a3*c3)
-    x2 = (-a3*d3 + a3*z - b3*c3)/(2*a3*c3) - np.sqrt((-a3*d3 + a3*z - b3*c3)**2 + 4*a3*c3*(-b3*d3 + b3*z -1))/(2*a3*c3) 
-    if abs(xPast - x1) < abs(xPast - x2):
+    x2 = (-a3*d3 + a3*z - b3*c3)/(2*a3*c3) - np.sqrt((-a3*d3 + a3*z - b3*c3)**2 + 4*a3*c3*(-b3*d3 + b3*z -1))/(2*a3*c3)
+    if abs(x0 - x1) <= abs(x0 - x2):
         xIr3 = x1
     else:
         xIr3 = x2
-    return xIr3
-    
-
-def derivativeIr3(x):
-    return -a3/(a3*x + b3)**2 + c3
+    # Get variance of measurement linearised about estimate
+    # print(x0)
+    # Decide if measurement is an outlier
+    if (math.isnan(xIr3)):
+        xIr3 = x0
+    if (xIr3 <= ir3Min) or (xIr3 >= ir3Max):
+        Ir3varX = 1000
+        # xIr3 = x0
+    else:
+        Ir3varX = linearIr3Var(x0)
+        diff = abs(xIr3-x0)
+        std = np.sqrt(Ir3varX)
+        if diff > 3*std :
+            # xIr3 = x0
+            Ir3varX = 500
+        
+    # print(xIr3)
+    return xIr3, Ir3varX
 
 def linearIr3Var(x0):
     """Function linearises sensor model about x0 and calculates variance in Z based on linear model"""
@@ -189,9 +202,33 @@ def linearIr3Var(x0):
     # turned into y = mx+k form:
     varZ = ir3VarE #VarLookup(x0, xLookupIr3, variancesIr3)
     m = derivativeIr3(x0)
+    # print(x0, "-->", m)
     varX = varZ/m**2
+    if varX > 100:
+        print(x0, m, varX)
+        varX = 100
     return varX
     
+##### Lookup Function and Tables ##########################
+# Lookup tables attained from 'divide_chunks' function in models
+xLookupIr3 = [0.09679938, 0.90525033, 1.71370128, 2.52215223, 3.33060318]
+variancesIr3 = [0.004826065829283602, 0.004357475760755817, 0.005871319309306362, 0.004765047580434493, 0.006197931690626443]
+xLookupIr4 = [0.09679938, 0.90525033, 1.71370128, 2.52215223, 3.33060318]
+variancesIr4 = [0.12220775598917524, 0.015966623766261956, 0.012969067620212034, 0.019064140416456637, 0.022062251790182192]
+xLookupSonar = [sonarMin, 0.90525033, 1.71370128, 2.52215223, sonarMax] # min: 0.09679938 max: 3.33060318
+variancesSonar = [2.281659850515315e-05, 1.7174942189593155e-05, 3.873231279068888e-05, 0.00011085378539295636, 0.00013254441517565623]
+xLookupMotion = [-0.53948363, -0.27169283, -0.00390204,  0.26388876,  0.53167956]
+variancesMotion = [0.0019200491161449286, 0.00123474268792669, 0.0002559447356770384, 0.0009352631546926811, 0.0014164489783990344]
+
+def VarLookup(x, xLookup, variances):
+    #if ((x >= min(xLookup)) and (x < max(xLookup))):
+    for i in range(0, len(xLookup)-1):
+        # print(x, xLookup[i], xLookup[i+1])
+        if (x >= xLookup[i]) and (x < xLookup[i+1]):
+            # print("Var = {}".format(variances[i]))
+
+            Var = variances[i]
+    return Var
 
 ##### Testing #############################################
 # zS = 0.1
@@ -206,6 +243,7 @@ initialX = 0
 initialVar = 0
 Xir3Past = initialX
 Xir4Past = initialX
+XsonarPast = initialX
 postXL = []
 priorXL = []
 wIr3 = []
@@ -215,10 +253,15 @@ K1s = []
 dt = time[1:] - time[0:-1]
 
 priorVarL = []
+sonarVarL = []
+sonarXL = []
+
+ir3XL = []
+ir3VarL = []
 
 for i in range(0, len(index)):
     ### Predict
-    priorX, priorVar = motion(v_comm[i], initialX, dt[i-1], initialVar) # Why does making this dt[i] make the graph go spaggy
+    priorX, priorVar = motion(v_comm[i-1], initialX, dt[i-1], initialVar) # Why does making this dt[i] make the graph go spaggy
     priorXL.append(priorX)
     priorVarL.append(priorVar)
     
@@ -226,12 +269,15 @@ for i in range(0, len(index)):
     # postVar = priorVar
     
     ### Update
-    Xir3 = ir3Inv(raw_ir3[i], Xir3Past)
-    VarIr3 = linearIr3Var(Xir3)
-    if Xir3 <= ir3Min and Xir3 >= ir3Max:
-        VarIr3 = 100
-
-    Xir3Past = Xir3
+    # Sonar
+    Xsonar, VarSonar = sonarInv(sonar1[i], priorX)
+    sonarXL.append(Xsonar)
+    sonarVarL.append(VarSonar)
+    # IR3
+    # print(priorX)
+    Xir3, VarIr3 = ir3Inv(raw_ir3[i], priorX)
+    ir3XL.append(Xir3)
+    ir3VarL.append(VarIr3)
 
     K1 = (1/VarIr3)/(1/priorVar + 1/VarIr3)
     K1s.append(K1)
@@ -267,10 +313,18 @@ for i in range(0, len(index)):
     # postVar = 1/(1/VarBlu + 1/priorVarL[i])
     # initialX = postX[i]
     # initialVar = postVar
-   
-# print(priorVarL[0])
-plot(time, priorVarL)
-m = 1
+
+# print(ir3VarL)
+fig1, axes1 = subplots(3)
+axes1[0].plot(time, priorVarL)
+axes1[0].set_ylabel('priorVar')
+axes1[1].plot(time, ir3VarL)
+axes1[1].set_ylabel('ir3Var')
+axes1[2].plot(time, ir3XL)
+axes1[2].set_ylabel('ir3Est')
+axes1[2].set_xlabel('Time (s)')
+
+m = 0
 M = -1 #len(time)
 x = time[m:M]
 y = postXL[m:M]
@@ -281,6 +335,7 @@ y2 = K1s[m:M]
 fig, axes = subplots(3)
 axes[0].plot(x, y)
 # axes[0].plot(x, y3)
+# axes[0].plot(time, sonarXL)
 axes[0].set_ylabel('Displacement (m)')
 axes[1].plot(x, y1)
 axes[1].set_ylabel('Velocity (m/s)')
@@ -290,8 +345,8 @@ axes[2].set_xlabel('Time (s)')
 
 newL = []
 for i in range(m, M):
-    new, var = motion(v_comm[i], postX[i-1], dt[1], initialVar)
-    print(new, "===", postX[i], "com", v_comm[i])
+    new, var = motion(v_comm[i], postXL[i-1], dt[i-1], initialVar)
+    # print(new, "===", postXL[i], "com", v_comm[i])
 
 # print(new, postX[m:M])
 
