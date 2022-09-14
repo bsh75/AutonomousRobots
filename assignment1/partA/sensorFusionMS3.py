@@ -83,7 +83,7 @@ def ir4(x):
         z = 1/ (g4* x + h4) + i4 * x + j4
     return z
 
-def ir4Inv(z, x0):
+def ir4Inv(z, xPast):
     """returns a list of possible x values for a given z"""
     possibleX = []
     # Find the roots of the first section of function and add them if the suitable
@@ -99,30 +99,11 @@ def ir4Inv(z, x0):
     if (endx2 > x04 and endx2 < 3.5):
         possibleX.append(endx2)
     # Make sure that the estimate returned is the one closest to past estimate
-    if len(possibleX) > 0:
-        xIr4 = possibleX[0]
-        for x in possibleX:
-            if abs(x0 - x) < abs(x0 - xIr4):
-                xIr4 = x
-        # Check that its within the range of the sensor
-        if (xIr4 <= ir4Min) or (xIr4 >= ir4Max):
-            ir4VarX = 1000
-            # xIr4 = x0
-        else:
-            # Outlier Rejection
-            ir4VarX = linearIr3Var(x0)
-            diff = abs(xIr4-x0)
-            std = np.sqrt(ir4VarX)
-            if diff > 3*std :
-                # xIr4 = x0
-                ir4VarX = 500
-    else:
-        # No root from calc give high variance but last position
-        xIr4 = x0
-        ir4VarX = 100
-        
-    # print(xIr4)
-    return xIr4, ir4VarX
+    X = xPast
+    for x in possibleX:
+        if abs(xPast - x) < abs(xPast - X):
+            X = x
+    return X
 
 def derivativeIr4(x):
     if x <= x04:
@@ -204,7 +185,7 @@ def ir3Inv(z, x0):
         # print(xIr3)
         xIr3 = x0
         Ir3varX = 100
-    if (xIr3 <= ir3Min) or (xIr3 >= ir3Max):
+    elif (xIr3 <= ir3Min) or (xIr3 >= ir3Max):
         Ir3varX = 1000
         # xIr3 = x0
     else:
@@ -280,9 +261,6 @@ sonarXL = []
 ir3XL = []
 ir3VarL = []
 
-ir4XL = []
-ir4VarL = []
-
 for i in range(0, len(index)):
     ### Predict
     priorX, priorVar = motion(v_comm[i-1], initialX, dt[i-1], initialVar) # Why does making this dt[i] make the graph go spaggy
@@ -298,24 +276,20 @@ for i in range(0, len(index)):
     sonarXL.append(Xsonar)
     sonarVarL.append(VarSonar)
     # IR3
-    # # print(priorX)
-    # Xir3, VarIr3 = ir3Inv(raw_ir3[i], priorX)
-    # ir3XL.append(Xir3)
-    # ir3VarL.append(VarIr3)
-    # IR4
-    Xir4, VarIr4 = ir4Inv(raw_ir4[i], priorX)
-    ir4XL.append(Xir4)
-    ir4VarL.append(VarIr4)
+    # print(priorX)
+    Xir3, VarIr3 = ir3Inv(raw_ir3[i], priorX)
+    ir3XL.append(Xir3)
+    ir3VarL.append(VarIr3)
 
     # K1 = (1/VarIr3)/(1/priorVar + 1/VarIr3)
     # K1s.append(K1)
     # postX = (K1)*Xir3 + (1-K1)*priorX
-    wIr3.append(1/VarIr4/(1/VarIr4 + 1/priorVar + 1/VarSonar))
-    wSonar.append(1/VarSonar/(1/VarIr4 + 1/priorVar + 1/VarSonar))
-    K1s.append(1/priorVar/(1/VarIr4 + 1/priorVar + 1/VarSonar))
+    wIr3.append(1/VarIr3/(1/VarIr3 + 1/priorVar + 1/VarSonar))
+    wSonar.append(1/VarSonar/(1/VarIr3 + 1/priorVar + 1/VarSonar))
+    K1s.append(1/priorVar/(1/VarIr3 + 1/priorVar + 1/VarSonar))
 
-    postX = (1/VarIr4*Xir4 + 1/priorVar*priorX + 1/VarSonar*Xsonar)/(1/VarIr4 + 1/priorVar + 1/VarSonar)
-    postVar = 1/(1/VarIr4 + 1/priorVar + 1/VarSonar)
+    postX = (1/VarIr3*Xir3 + 1/priorVar*priorX + 1/VarSonar*Xsonar)/(1/VarIr3 + 1/priorVar + 1/VarSonar)
+    postVar = 1/(1/VarIr3 + 1/priorVar + 1/VarSonar)
 
     postXL.append(postX)
     initialX = postX
