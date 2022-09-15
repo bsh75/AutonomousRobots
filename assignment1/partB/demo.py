@@ -97,7 +97,7 @@ axes.figure.canvas.flush_events()
 start_step = 50
 
 # TODO: Number of particles, you may need more or fewer!
-Nparticles = 50
+Nparticles = 100
 
 # TODO: How many steps between display updates
 display_steps = 10
@@ -148,8 +148,9 @@ for n in range(start_step + 1, Nposes):
 
         if sum(weights) < 1e-50:
             print('All weights are close to zero, you are lost...')
-            #weights = np.ones(Nparticles)
+            #poses[m] =randn(1) 
             # TODO: Do something to recover
+            # poses[m] = odom_poses[n-1] + randn
             
             break
 

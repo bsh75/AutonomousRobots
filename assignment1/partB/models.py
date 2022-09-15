@@ -43,34 +43,40 @@ def motion_model(particle_poses, speed_command, odom_pose, odom_pose_prev, dt):
     # TODO.  For each particle calculate its predicted pose plus some
     # additive error to represent the process noise.  With this demo
     # code, the particles move in the -y direction with some Gaussian
-    # additive noise in the x direction.  Hint, to start with do not
+    # additive noise in the x direction.  Hint, to start with do not-- np.zeros(M)
+
+    phi1 = 0
+    phi2 = 0
+    d = 0
     # add much noise.
+    phi1_std = 0.005
+    phi2_std = 0.005
+    d_std = 0.05
 
     phi1Prime = np.arctan2((odom_pose[1]-odom_pose_prev[1]),(odom_pose[0]-odom_pose_prev[0])) - odom_pose_prev[2]
     dPrime = np.sqrt((odom_pose[1]-odom_pose_prev[1])**2 + (odom_pose[0]-odom_pose_prev[0])**2)
     phi2Prime = odom_pose[2] - odom_pose_prev[2] - phi1Prime
 
+    print(" {} {} {}".format(phi1Prime, phi2Prime, dPrime))
+
     for m in range(M):
-        #particle_poses[m, 0] += dPrime*cos(particle_poses[m, 2] + phi1Prime) + randn(1) * 0.1
-        #particle_poses[m, 1] += dPrime*sin(particle_poses[m, 2] + phi1Prime) + randn(1) * 0.1
-        #particle_poses[m, 2] += phi1Prime + phi2Prime + randn(1) * 0.1
-        # x(m)n = x(m)n-1 + g(x(m)n-1, un-1) + w(m)n
+      
+        phi1 = gauss(randn(), phi1Prime, phi1_std)
+        phi2 = gauss(randn(), phi2Prime , phi2_std)
+        d = gauss(randn(), dPrime, d_std)
 
-        # # Add gaussian additive noise (randn) in x direction
-        # particle_poses[m, 0] += randn(1) * 0.1
-        # # Particles move in the -y direction  X AND Y OPPOSITE
-        # particle_poses[m, 1] -= 0.1    
-
-
-        particle_poses[m, 0] += dPrime*cos(particle_poses[m, 2] + phi1Prime) # + randn(1) * 0.1
-        particle_poses[m, 1] += dPrime*sin(particle_poses[m, 2] + phi1Prime) # + randn(1) * 0.1
-        particle_poses[m, 2] += phi1Prime + phi2Prime
+        particle_poses[m, 0] += d*cos(particle_poses[m, 2] + phi1) 
+        particle_poses[m, 1] += d*sin(particle_poses[m, 2] + phi1) 
+        particle_poses[m, 2] += phi1 + phi2
 
         # x(m)n = x(m)n-1 + g(x(m)n-1, un-1) + w(m)n
 
         # Add gaussian additive noise in x direction
-        particle_poses[m, 0] += randn(1) * 0.01
-        particle_poses[m, 1] += randn(1) * 0.05
+        #particle_poses[m, 0] += randn(1) * 0.02
+        #particle_poses[m, 1] += randn(1) * 0.01
+
+        #particle_poses[m, 0] += gauss(randn(),0, 10)
+        #particle_poses[m, 1] += gauss(rand(),0,10)
 
         # Particles move in the -y direction   WHY IS THE GRAPH X AND Y OPPOSITE TO WHAT YOUD EXPECT FOR A MAP!!!!
         #particle_poses[m, 1] -= 0.1
