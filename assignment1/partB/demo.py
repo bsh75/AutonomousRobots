@@ -77,6 +77,7 @@ fig.canvas.manager.full_screen_toggle()
 
 plot_beacons(axes, beacon_locs, label='Beacons')
 plot_path(axes, slam_poses, '-', label='SLAM')
+#plot_path(axes, slam_poses, '-', label='SLAM')
 # Uncomment to show odometry when debugging
 #plot_path(axes, odom_poses, 'b:', label='Odom')
 
@@ -96,22 +97,22 @@ axes.figure.canvas.flush_events()
 # When your algorithm works well set to 0
 start_step = 50
 
-# TODO: Number of particles, you may need more or fewer!
-Nparticles = 100
+
+Nparticles = 200
 
 # TODO: How many steps between display updates
-display_steps = 10
+disqqqplay_steps = 10
 
 # TODO: Set initial belief.  This assumes a uniform distribution for the pose
 # around the known starting pose.  It simplifies the localisation to a
 # tracking problem.
 start_pose = slam_poses[start_step]
-Xmin = start_pose[0] - 0.1
-Xmax = start_pose[0] + 0.1
-Ymin = start_pose[1] - 0.1
-Ymax = start_pose[1] + 0.1
-Tmin = start_pose[2] - 0.1
-Tmax = start_pose[2] + 0.1
+Xmin = start_pose[0] - 0.2
+Xmax = start_pose[0] + 0.2
+Ymin = start_pose[1] - 0.2
+Ymax = start_pose[1] + 0.2
+Tmin = start_pose[2] - 0.2
+Tmax = start_pose[2] + 0.2
 
 weights = np.ones(Nparticles)
 poses = np.zeros((Nparticles, 3))
@@ -132,7 +133,7 @@ state = 'run'
 display_step_prev = 0
 for n in range(start_step + 1, Nposes):
 
-    # TODO: write motion model function in models.py
+   
     poses = motion_model(poses, commands[n-1], odom_poses[n], odom_poses[n - 1],
                          t[n] - t[n - 1])
     
@@ -142,17 +143,15 @@ for n in range(start_step + 1, Nposes):
         beacon_loc = beacon_locs[beacon_id]
         beacon_pose = beacon_poses[n]
 
-        # TODO: write sensor model function in models.py
+       
         weights *= sensor_model(poses, beacon_pose, beacon_loc)
         #print("weights = {}".format(weights))
 
         if sum(weights) < 1e-50:
             print('All weights are close to zero, you are lost...')
-            #poses[m] =randn(1) 
-            # TODO: Do something to recover
-            # poses[m] = odom_poses[n-1] + randn
+            weights = np.ones(Nparticles)
             
-            break
+            # break
 
         if is_degenerate(weights):
             print('Resampling %d' % n)
@@ -167,7 +166,7 @@ for n in range(start_step + 1, Nposes):
         plot_particles(axes, poses, weights)
 
         # Leave breadcrumbs showing current odometry
-        # plot_path(axes, odom_poses[n], 'k.')
+        plot_path(axes, odom_poses[n], 'k.', label = 'Odometry')
 
         # Show mean estimate
         plot_path_with_visibility(axes, est_poses[display_step_prev-1 : n+1],
