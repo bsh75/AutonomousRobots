@@ -7,8 +7,8 @@ import statistics
 
 
  # Model for fit
-def model(x,a,b):
-    return a * x + b
+def model(v,a,b):
+    return a * v + b
 
 # Load data
 filename = 'assignment1/partA/training1.csv'

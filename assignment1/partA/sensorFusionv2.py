@@ -4,15 +4,15 @@ from numpy import loadtxt
 from matplotlib.pyplot import plot, subplots, show
 import math
 
-
+test = False
 # filename = 'assignment1/partA/test.csv'
 # filename = 'assignment1/partA/training1.csv'
 filename = 'assignment1/partA/training2.csv'
-test = False
 if filename == 'assignment1/partA/test.csv':
     test = True
 
 data = loadtxt(filename, delimiter=',', skiprows=1)
+
 
 # Split into columns
 if test:
@@ -22,6 +22,7 @@ else:
     index, time, dist, v_comm, raw_ir1, raw_ir2, raw_ir3, raw_ir4, \
     sonar1, sonar2 = data.T
 
+excludeVar = 200
 outlierVar = 200 # Variance assigned to outliers
 tolSTD = 3 # Limit to acceptable number of standard deviations for outlier rejection
 addition = 0 # Addition to priorX for outliers
@@ -109,17 +110,24 @@ def ir4Inv(z, x0):
         for x in possibleX:
             if abs(x0 - x) < abs(x0 - xIr4):
                 xIr4 = x
-        # Outlier Rejection
-        ir4VarX = linearIr3Var(x0)
-        diff = abs(xIr4-x0)
-        std = np.sqrt(ir4VarX)
-        if diff > tolSTD*std :
-            ir4VarX = outlierVar
+        # Check that its within the range of the sensor
+        if (xIr4 <= ir4Min) or (xIr4 >= ir4Max):
+            ir4VarX = excludeVar
+            # xIr4 = x0
+        else:
+            # Outlier Rejection
+            ir4VarX = linearIr3Var(x0)
+            diff = abs(xIr4-x0)
+            std = np.sqrt(ir4VarX)
+            if diff > 3*std :
+                # xIr4 = x0
+                ir4VarX = excludeVar
     else:
         # No root from calc give high variance but last position
-        xIr4 = x0 + addition
-        ir4VarX = outlierVar
+        xIr4 = x0
+        ir4VarX = excludeVar
 
+    # print(xIr4)
     return xIr4, ir4VarX
 
 def derivativeIr4(x):
@@ -151,16 +159,18 @@ def sonar(x):
     return  aS * x + bS
 
 def sonarInv(z, x0):
-    # Find x given z
     xS = (z - bS)/aS
-    # Find Variance of estimate and look for outliers
     varZ = sonarVarE # VarLookup(x0, xLookupSonar, variancesSonar)
     sonarVarX = varZ/aS**2  # Var(aX + b) = a^2*Var(X)
-    diff = abs(xS-x0)
-    std = np.sqrt(sonarVarX)
-    if diff > tolSTD*std :
-        xS = x0 + addition
-        sonarVarX = outlierVar
+    
+    if (xS <= sonarMin) or (xS >= sonarMax):
+        sonarVarX = excludeVar
+    else:
+        diff = abs(xS-x0)
+        std = np.sqrt(sonarVarX)
+        if diff > 2*std :
+            xS = x0
+            sonarVarX = excludeVar
 
     return xS, sonarVarX
 
@@ -192,16 +202,25 @@ def ir3Inv(z, x0):
         xIr3 = x1
     else:
         xIr3 = x2
-    # If nan is returned then set estimate to an arbitrary increment from prior
+    # Get variance of measurement linearised about estimate
+    # print(x0)
+    # Decide if measurement is an outlier
     if (math.isnan(xIr3)):
-        xIr3 = x0 + addition
-    # Find Variance of estimate and look for outliers
-    Ir3varX = linearIr3Var(x0)
-    diff = abs(xIr3-x0)
-    std = np.sqrt(Ir3varX)
-    if diff > tolSTD*std :
-        Ir3varX = outlierVar
-
+        # print(xIr3)
+        xIr3 = x0
+        Ir3varX = excludeVar
+    if (xIr3 <= ir3Min) or (xIr3 >= ir3Max):
+        Ir3varX = excludeVar
+        # xIr3 = x0
+    else:
+        Ir3varX = linearIr3Var(x0)
+        diff = abs(xIr3-x0)
+        std = np.sqrt(Ir3varX)
+        if diff > 3*std :
+            # xIr3 = x0
+            Ir3varX = excludeVar
+        
+    # print(xIr3)
     return xIr3, Ir3varX
 
 def linearIr3Var(x0):

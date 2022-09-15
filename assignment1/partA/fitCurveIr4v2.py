@@ -8,23 +8,20 @@ import statistics
 def model(x,a,b,c,d):
     return  1/(a*x+b) + c*x + d # Alfies old: 0.5*a * np.exp(-0.5*b *x) + c*x +d
 
-# Test
-# Load data
 filename = 'assignment1/partA/calibration.csv'
-IR3Data = loadtxt(filename, delimiter=',',skiprows=1, usecols=(2,6))
+IR4Data = loadtxt(filename, delimiter=',',skiprows=1, usecols=(2,7))
+dist, ir4_raw = IR4Data.T
 
-dist, ir3_raw = IR3Data.T
-
-ir3Max = 0.8
-ir3Min = 0.1
+# Remove data outside sensor range
+ir4Min = 1
+ir4Max = 5
 x = []
 y = []
 
-# Remove data outside sensor range
 for i in range(0, len(dist)):
-    if dist[i] >= ir3Min and dist[i] <= ir3Max:
+    if dist[i] >= ir4Min and dist[i] <= ir4Max:
         x.append(dist[i])
-        y.append(ir3_raw[i])
+        y.append(ir4_raw[i])
 
 x = np.array(x)
 y = np.array(y)
@@ -35,15 +32,15 @@ IRerror = y - IRfit
 
 IRerrorMean = statistics.mean(IRerror)
 IRerrorVariance = statistics.variance(IRerror,IRerrorMean)
-print("Original IR3 mean error = {0:.4f} with variance {1:.4f}". format(IRerrorMean,IRerrorVariance))
-print("Original IR3 mean error = {} with variance {}". format(IRerrorMean,IRerrorVariance))
+print("Original IR4 mean error = {0:.4f} with variance {1:.4f}". format(IRerrorMean,IRerrorVariance))
+print("Original IR4 mean error = {} with variance {}". format(IRerrorMean,IRerrorVariance))
 
 fig, axes = subplots(3)
-fig.suptitle('Calibration IR3 ')
+fig.suptitle('Calibration IR4 ')
 
 axes[0].plot(x, y, '.')
 axes[0].plot(x, IRfit, '.' )
-axes[0].set_title('IR3 raw data')
+axes[0].set_title('IR4 raw data')
 
 axes[1].plot(x, IRerror, '.')
 axes[1].set_title('measurement error')
@@ -80,11 +77,11 @@ print("Refitted mean error = {} with variance {}". format(set1Mean,set1Variance)
 
 
 fig, axes = subplots(3)
-fig.suptitle('Refitted IR3 plots ')
+fig.suptitle('Refitted IR4 plots ')
 
 axes[0].plot(fittedx, fittedy, '.')
 axes[0].plot(fittedx, fittedIRfit, '.' )
-axes[0].set_title('IR3 raw data')
+axes[0].set_title('IR4 raw data')
 
 
 axes[1].plot(fittedx, fittedIRerror, '.')
@@ -130,6 +127,7 @@ def divide_chunks(xL, errorL, N):
 
 n = 5
 X, E = divide_chunks(fittedx, fittedIRerror, n)
+print(len(X), len(E))
 
 show()
 

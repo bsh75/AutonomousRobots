@@ -8,6 +8,13 @@ from scipy.optimize import curve_fit
 def model(x,a,b):
     return a * x + b
 
+def foundModel(x):
+    aS = 0.99499792
+    bS = -0.01731528    
+    return aS*x + bS
+
+sonarVarE = 0.007945636
+
 # Test
 # Load data
 filename = 'assignment1/partA/calibration.csv'
@@ -16,7 +23,7 @@ distance, rawS1 = S1Data.T
 
 
 n = 0 # index for outer loop
-N = 1 # How many times the data is cleaned
+N = 10 # How many times the data is cleaned
 tolerance = 0.1 # Acceptable range in data
 
 while n <= N:
@@ -65,7 +72,7 @@ def divide_chunks(xL, errorL, N):
     # errors = []
     div = (max(xL)-min(xL))/N
     print("divider = {}".format(div))
-    for n in range(0, N):
+    for n in range(0, N-1):
         xSection = []
         errorSection = []
         for i in range(0, len(xL)):

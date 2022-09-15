@@ -6,7 +6,22 @@ from numpy import loadtxt
 
 filename = 'assignment1/partA/calibration.csv'
 IR3Data = loadtxt(filename, delimiter=',',skiprows=1, usecols=(2,7))
-distance, voltage = IR3Data.T
+dist, ir4_raw = IR3Data.T
+
+# Remove data outside sensor range
+ir4Min = 1
+ir4Max = 5
+xdata = []
+ydata = []
+
+for i in range(0, len(dist)):
+    if dist[i] >= ir4Min and dist[i] <= ir4Max:
+        xdata.append(dist[i])
+        ydata.append(ir4_raw[i])
+
+xdata = np.array(xdata)
+ydata = np.array(ydata)
+
 
 x, y = variables('x, y')
 a, b, c, d, e, f, g, h, i, j, x0 = parameters('a, b, c, d, e, f, g, h, i, j, x0')
@@ -32,8 +47,8 @@ constraints = [
 # ydata = model(x=xdata, a=0.0, b=1.0, x0=1.0).y
 # np.random.seed(2)
 # ydata = np.random.normal(ydata, 0.5)  # add noise
-xdata = distance
-ydata = voltage
+# xdata = distance
+# ydata = voltage
 
 # Help the fit by bounding the switchpoint between the models
 x0.min = 0.7

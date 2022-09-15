@@ -4,11 +4,10 @@ from numpy import loadtxt
 from matplotlib.pyplot import plot, subplots, show
 import math
 
-
+test = False
 # filename = 'assignment1/partA/test.csv'
 # filename = 'assignment1/partA/training1.csv'
 filename = 'assignment1/partA/training2.csv'
-test = False
 if filename == 'assignment1/partA/test.csv':
     test = True
 
@@ -22,6 +21,7 @@ else:
     index, time, dist, v_comm, raw_ir1, raw_ir2, raw_ir3, raw_ir4, \
     sonar1, sonar2 = data.T
 
+excludeVar = 200
 outlierVar = 200 # Variance assigned to outliers
 tolSTD = 3 # Limit to acceptable number of standard deviations for outlier rejection
 addition = 0 # Addition to priorX for outliers
@@ -33,7 +33,10 @@ bM = 0 #-0.001387
 motionMeanE = 0.000228
 motionVarE = 0.00053
 
-def motion(v_com, prevPos, dt, VarPrevious):
+def motion(v_com, v_comPrev, prevPos, dt, VarPrevious):
+    acceleration = abs(v_com - v_comPrev)/dt
+    tol = 1
+    div = 1.5
     # Find better estimation of actual speed
     if v_com == 0:
         v = 0
@@ -42,12 +45,15 @@ def motion(v_com, prevPos, dt, VarPrevious):
     # Find new position using this speed
     newPos = prevPos + v * dt
     # Find variance: Var(aX + b) = a^2*Var(X) but a = 1
-    motionVarX = VarPrevious + motionVarE #VarLookup(newPos, xLookupMotion, variancesMotion) 
+    if acceleration < tol:
+        motionVarX = (VarPrevious + motionVarE)/div #VarLookup(newPos, xLookupMotion, variancesMotion) 
+    else:
+        motionVarX = VarPrevious + motionVarE #VarLookup(newPos, xLookupMotion, variancesMotion) 
 
     return newPos, motionVarX
 
 def linearMotionVar(x0, VarPrevious):
-    processVar = motionVarE # VarLookup(x0, xLookupMotion, variancesMotion)
+    processVar = VarLookup(x0, xLookupMotion, variancesMotion)
     motionVarX = aM**2 * VarPrevious + processVar # Var(aX + b) = a^2*Var(X)
     return motionVarX
 
@@ -109,17 +115,24 @@ def ir4Inv(z, x0):
         for x in possibleX:
             if abs(x0 - x) < abs(x0 - xIr4):
                 xIr4 = x
-        # Outlier Rejection
-        ir4VarX = linearIr3Var(x0)
-        diff = abs(xIr4-x0)
-        std = np.sqrt(ir4VarX)
-        if diff > tolSTD*std :
-            ir4VarX = outlierVar
+        # Check that its within the range of the sensor
+        if (xIr4 <= ir4Min) or (xIr4 >= ir4Max):
+            ir4VarX = excludeVar
+            # xIr4 = x0
+        else:
+            # Outlier Rejection
+            ir4VarX = linearIr3Var(x0)
+            diff = abs(xIr4-x0)
+            std = np.sqrt(ir4VarX)
+            if diff > 3*std :
+                # xIr4 = x0
+                ir4VarX = excludeVar
     else:
         # No root from calc give high variance but last position
-        xIr4 = x0 + addition
-        ir4VarX = outlierVar
+        xIr4 = x0
+        ir4VarX = excludeVar
 
+    # print(xIr4)
     return xIr4, ir4VarX
 
 def derivativeIr4(x):
@@ -132,7 +145,7 @@ def linearIr4Var(x0):
     """Function linearises sensor model about x0 and calculates variance in Z based on linear model"""
     # Taylor series with 2 terms [ h = h(x0)) + h'(x0)(x-x0) ] {ir3Inv(x0) + derivativeIr3(x0)*(x-x0)}
     # turned into y = mx+k form:
-    varZ = ir4VarE # VarLookup(x0, xLookupIr4, variancesIr4)
+    varZ = VarLookup(x0, xLookupIr4, variancesIr4)
     m = derivativeIr4(x0)
     varX = varZ/m**2
     return varX
@@ -151,16 +164,18 @@ def sonar(x):
     return  aS * x + bS
 
 def sonarInv(z, x0):
-    # Find x given z
     xS = (z - bS)/aS
-    # Find Variance of estimate and look for outliers
     varZ = sonarVarE # VarLookup(x0, xLookupSonar, variancesSonar)
     sonarVarX = varZ/aS**2  # Var(aX + b) = a^2*Var(X)
-    diff = abs(xS-x0)
-    std = np.sqrt(sonarVarX)
-    if diff > tolSTD*std :
-        xS = x0 + addition
-        sonarVarX = outlierVar
+    
+    if (xS <= sonarMin) or (xS >= sonarMax):
+        sonarVarX = excludeVar
+    else:
+        diff = abs(xS-x0)
+        std = np.sqrt(sonarVarX)
+        if diff > 2*std :
+            xS = x0
+            sonarVarX = excludeVar
 
     return xS, sonarVarX
 
@@ -192,23 +207,27 @@ def ir3Inv(z, x0):
         xIr3 = x1
     else:
         xIr3 = x2
-    # If nan is returned then set estimate to an arbitrary increment from prior
+    # Get variance of measurement linearised about estimate
+    # Decide if measurement is an outlier
     if (math.isnan(xIr3)):
-        xIr3 = x0 + addition
-    # Find Variance of estimate and look for outliers
-    Ir3varX = linearIr3Var(x0)
-    diff = abs(xIr3-x0)
-    std = np.sqrt(Ir3varX)
-    if diff > tolSTD*std :
-        Ir3varX = outlierVar
-
+        xIr3 = x0 
+        Ir3varX = excludeVar
+    if (xIr3 <= ir3Min) or (xIr3 >= ir3Max):
+        Ir3varX = excludeVar
+    else:
+        Ir3varX = linearIr3Var(x0)
+        diff = abs(xIr3-x0)
+        std = np.sqrt(Ir3varX)
+        if diff > 3*std :
+            Ir3varX = excludeVar
+    
     return xIr3, Ir3varX
 
 def linearIr3Var(x0):
     """Function linearises sensor model about x0 and calculates variance in Z based on linear model"""
     # Taylor series with 2 terms [ h = h(x0)) + h'(x0)(x-x0) ] {ir3Inv(x0) + derivativeIr3(x0)*(x-x0)}
     # turned into y = mx+k form:
-    varZ = ir3VarE # VarLookup(x0, xLookupIr3, variancesIr3)
+    varZ = VarLookup(x0, xLookupIr3, variancesIr3) 
     m = derivativeIr3(x0)
     varX = varZ/m**2
     if varX > outlierVar:
@@ -217,20 +236,20 @@ def linearIr3Var(x0):
     
 ##### Lookup Function and Tables ##########################
 # Lookup tables attained from 'divide_chunks' function in models
-xLookupIr3 = [ir3Min, 0.90525033, 1.71370128, 2.52215223, ir3Max]  # Min:0.09679938 max: 3.33060318
-variancesIr3 = [0.004826065829283602, 0.004357475760755817, 0.005871319309306362, 0.004765047580434493, 0.006197931690626443]
-xLookupIr4 = [ir4Min, 0.90525033, 1.71370128, 2.52215223, ir4Max]  # Min:0.09679938 max: 3.33060318
-variancesIr4 = [0.12220775598917524, 0.015966623766261956, 0.012969067620212034, 0.019064140416456637, 0.022062251790182192]
+xLookupIr3 = [ir3Min, 0.27487821, 0.44969211, 0.624506, ir3Max]  # Min:0.09679938 max: 3.33060318
+variancesIr3 = [0.005259062158941537, 0.004205582131163834, 0.004218663822512923, 0.0036550723251393734]
+xLookupIr4 = [ir4Min, 1.58302592, 2.16549974, 2.74797355, ir4Max]  # Min:0.09679938 max: 3.33060318
+variancesIr4 = [0.009092585078558233, 0.01078753704477563, 0.00965668367922413, 0.011999134274178671]
 xLookupSonar = [sonarMin, 0.90525033, 1.71370128, 2.52215223, sonarMax] # min: 0.09679938 max: 3.33060318
-variancesSonar = [2.281659850515315e-05, 1.7174942189593155e-05, 3.873231279068888e-05, 0.00011085378539295636, 0.00013254441517565623]
+variancesSonar = [2.281659850515315e-05, 1.7174942189593155e-05, 3.873231279068888e-05, 0.00011085378539295636]
 xLookupMotion = [-0.53948363, -0.27169283, -0.00390204,  0.26388876,  0.53167956]
-variancesMotion = [0.0019200491161449286, 0.00123474268792669, 0.0002559447356770384, 0.0009352631546926811, 0.0014164489783990344]
+variancesMotion = [0.0019200491161449286, 0.00123474268792669, 0.0002559447356770384, 0.0009352631546926811]
 
 def VarLookup(x, xLookup, variances):
     #if ((x >= min(xLookup)) and (x < max(xLookup))):
     for i in range(0, len(xLookup)-1):
         # print(x, xLookup[i], xLookup[i+1])
-        if (x >= xLookup[i]) and (x < xLookup[i+1]):
+        if (x >= xLookup[i]) and (x <= xLookup[i+1]):
             # print("Var = {}".format(variances[i]))
             Var = variances[i]
         else: 
@@ -262,7 +281,7 @@ dt = time[1:] - time[0:-1]
 
 for i in range(0, len(index)-1):
     ### Predict
-    priorX, priorVar = motion(v_comm[i], initialX, dt[i], initialVar)
+    priorX, priorVar = motion(v_comm[i], v_comm[i-1], initialX, dt[i], initialVar)
     priorXL.append(priorX)
     priorVarL.append(priorVar)
     
@@ -337,7 +356,7 @@ axes[2].plot(x, wSonar[m:M])
 axes[2].plot(x, wIr4[m:M])
 axes[2].plot(x, K1s[m:M])
 axes[2].plot(x, wIr3[m:M])
-axes[2].set_ylabel('Scalar (K1)')
+axes[2].set_ylabel('Gain')
 axes[2].set_xlabel('Time (s)')
 axes[2].legend(["Sonar", "wIr4", "Motion", "wIr4"])
 

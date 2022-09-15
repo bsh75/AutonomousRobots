@@ -74,7 +74,7 @@ var = np.var(error)
 print("Mean =", mean, " Var =", var)
 
 ########### Get Lookup tables for variances ################
-# Split error into N lists depending on the xList values assosiated
+# # Split error into N lists depending on the xList values assosiated
 def divide_chunks(xL, errorL, N):
     """Function takes a list of errors and their assosiated positions in
     x axis and returns a list of x divisions and the variances assosiated 
@@ -85,7 +85,7 @@ def divide_chunks(xL, errorL, N):
     # errors = []
     div = (max(xL)-min(xL))/N
     print("divider = {}".format(div))
-    for n in range(0, N):
+    for n in range(0, N-1):
         xSection = []
         errorSection = []
         for i in range(0, len(xL)):
