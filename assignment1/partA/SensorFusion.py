@@ -5,9 +5,9 @@ from matplotlib.pyplot import plot, subplots, show
 import math
 
 
-# filename = 'assignment1/partA/test.csv'
+filename = 'assignment1/partA/test.csv'
 # filename = 'assignment1/partA/training1.csv'
-filename = 'assignment1/partA/training2.csv'
+# filename = 'assignment1/partA/training2.csv'
 test = False
 if filename == 'assignment1/partA/test.csv':
     test = True

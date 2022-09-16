@@ -8,8 +8,8 @@ filename = 'assignment1/partA/calibration.csv'
 IR3Data = loadtxt(filename, delimiter=',',skiprows=1, usecols=(2,7))
 dist, ir4_raw = IR3Data.T
 
-# Remove data outside sensor range
-ir4Min = 1
+# # Remove data outside sensor range (Done to form variance lookups)
+ir4Min = 0 # set to 1 to limit to sensor range
 ir4Max = 5
 xdata = []
 ydata = []
@@ -21,7 +21,6 @@ for i in range(0, len(dist)):
 
 xdata = np.array(xdata)
 ydata = np.array(ydata)
-
 
 x, y = variables('x, y')
 a, b, c, d, e, f, g, h, i, j, x0 = parameters('a, b, c, d, e, f, g, h, i, j, x0')
@@ -95,10 +94,22 @@ while n < N:
 
 error = ydata - yFit
 
-fig2, axes2 = subplots(2)
-axes2[0].plot(xdata, ydata, '.')
+fig2, axes2 = subplots(3)
+fig2.tight_layout()
+axes2[0].set_title('IR4')
+axes2[0].plot(xdata, ydata, '.', alpha=0.2)
 axes2[0].plot(xdata, yFit)
-axes2[1].hist(error, bins=100)
+axes2[0].set_xlabel('Range (m)')
+axes2[0].set_ylabel('Measured Distance (m)')
+
+axes2[1].plot(xdata, error, '.', alpha=0.2)
+axes2[1].set_xlabel('Range (m)')
+axes2[1].set_ylabel('Error (m)')
+
+axes2[2].hist(error, bins=40)
+axes2[2].set_xlabel('Error (m)')
+axes2[2].set_ylabel('Counts')
+
 
 mean = np.mean(error)
 var = np.var(error)
@@ -108,40 +119,40 @@ print("Mean =", mean, " Var =", var)
 
 ########### Get Lookup tables for variances ################
 # Split error into N lists depending on the xList values assosiated
-def divide_chunks(xL, errorL, N):
-    """Function takes a list of errors and their assosiated positions in
-    x axis and returns a list of x divisions and the variances assosiated 
-    with each division"""
-    print("original list size of: {}".format(len(xL)))
-    splitList = []
-    splitError = []
-    # errors = []
-    div = (max(xL)-min(xL))/N
-    print("divider = {}".format(div))
-    for n in range(0, N):
-        xSection = []
-        errorSection = []
-        for i in range(0, len(xL)):
-            if xL[i] >= (min(xL) + n*div) and xL[i] < (min(xL) + (n+1)*div):
-                xSection.append(xL[i])
-                errorSection.append(errorL[i])
-        splitList.append(xSection)
-        splitError.append(errorSection)
+# def divide_chunks(xL, errorL, N):
+#     """Function takes a list of errors and their assosiated positions in
+#     x axis and returns a list of x divisions and the variances assosiated 
+#     with each division"""
+#     print("original list size of: {}".format(len(xL)))
+#     splitList = []
+#     splitError = []
+#     # errors = []
+#     div = (max(xL)-min(xL))/N
+#     print("divider = {}".format(div))
+#     for n in range(0, N):
+#         xSection = []
+#         errorSection = []
+#         for i in range(0, len(xL)):
+#             if xL[i] >= (min(xL) + n*div) and xL[i] < (min(xL) + (n+1)*div):
+#                 xSection.append(xL[i])
+#                 errorSection.append(errorL[i])
+#         splitList.append(xSection)
+#         splitError.append(errorSection)
 
-    # sum = 0
-    # for i in range(0, len(splitList)):
-    #     size = len(splitList[i])
-    #     sum += size
-    # print("sum of sections: {}".format(sum))
-    vars = []
-    xdivisions = np.linspace(min(xL), max(xL), N)
-    for e in splitError:
-        vars.append(np.var(e))
-    print("x lookup list is {}".format(xdivisions))
-    print("associated variances in error: {}".format(vars))
-    return xdivisions, vars
+#     # sum = 0
+#     # for i in range(0, len(splitList)):
+#     #     size = len(splitList[i])
+#     #     sum += size
+#     # print("sum of sections: {}".format(sum))
+#     vars = []
+#     xdivisions = np.linspace(min(xL), max(xL), N)
+#     for e in splitError:
+#         vars.append(np.var(e))
+#     print("x lookup list is {}".format(xdivisions))
+#     print("associated variances in error: {}".format(vars))
+#     return xdivisions, vars
 
-n = 5
-X, E = divide_chunks(xdata, error, n)
+# n = 5
+# X, E = divide_chunks(xdata, error, n)
 
 plt.show()

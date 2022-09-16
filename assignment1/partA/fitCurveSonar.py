@@ -14,9 +14,11 @@ filename = 'assignment1/partA/calibration.csv'
 S1Data = loadtxt(filename, delimiter=',',skiprows=1, usecols=(2,8))
 distance, rawS1 = S1Data.T
 
+distanceAll = distance
+rawS1All = rawS1
 
 n = 0 # index for outer loop
-N = 1 # How many times the data is cleaned
+N = 10 # How many times the data is cleaned
 tolerance = 0.1 # Acceptable range in data
 
 while n <= N:
@@ -33,21 +35,27 @@ while n <= N:
 
     distance = np.array(distance)
     rawS1 = np.array(rawS1)
-
+    # Replot and refit
     params, cov = curve_fit(model, distance, rawS1)
     fit = model(distance,*params)
     error = fit - rawS1
 
 # Plot cleaned data with fit
 fig, axes = subplots(3)
-fig.suptitle('Calibration Sonar 1')
-axes[0].plot(distance, rawS1, '.', alpha=0.2)
-axes[0].plot(distance, fit)
-axes[0].set_title('Plot plus fit')
+fig.tight_layout()
+axes[0].set_title('Sonar')
+axes[0].plot(distanceAll, rawS1All, '.', alpha=0.2)
+axes[0].plot(distance, rawS1, '.', alpha=0.2, color='green')
+axes[0].plot(distance, fit, color='orange')
+axes[0].legend(["Outliers", "Points fitted", "Fit"])
+axes[0].set_xlabel('Range (m)')
+axes[0].set_ylabel('Measured Distance (m)')
 axes[1].plot(distance, error, '.', alpha=0.2)
-axes[1].set_title('error')
+axes[1].set_xlabel('Range (m)')
+axes[1].set_ylabel('Error (m)')
 axes[2].hist(error, bins=100)
-axes[2].set_title('histogram')
+axes[2].set_xlabel('Error (m)')
+axes[2].set_ylabel('Counts')
 
 # Show parameters and distribution of error
 print(params)
@@ -65,7 +73,7 @@ def divide_chunks(xL, errorL, N):
     # errors = []
     div = (max(xL)-min(xL))/N
     print("divider = {}".format(div))
-    for n in range(0, N):
+    for n in range(0, N-1):
         xSection = []
         errorSection = []
         for i in range(0, len(xL)):

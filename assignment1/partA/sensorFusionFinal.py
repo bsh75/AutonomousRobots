@@ -1,13 +1,16 @@
 from tkinter import W, Y
 import numpy as np
 from numpy import loadtxt
+import matplotlib.pyplot as plt
 from matplotlib.pyplot import plot, subplots, show
 import math
 
+################### LOAD DATA #####################
 test = False
-# filename = 'assignment1/partA/test.csv'
+filename = 'assignment1/partA/test.csv'
 # filename = 'assignment1/partA/training1.csv'
-filename = 'assignment1/partA/training2.csv'
+# filename = 'assignment1/partA/training2.csv'
+
 if filename == 'assignment1/partA/test.csv':
     test = True
 
@@ -21,12 +24,13 @@ else:
     index, time, dist, v_comm, raw_ir1, raw_ir2, raw_ir3, raw_ir4, \
     sonar1, sonar2 = data.T
 
-excludeVar = 200
-outlierVar = 200 # Variance assigned to outliers
-tolSTD = 3 # Limit to acceptable number of standard deviations for outlier rejection
-addition = 0 # Addition to priorX for outliers
 
-##### Motion Model (form motionCombined.py) ##################
+# Parameters used throughout
+excludeVar = 200 # Variance assigned to outliers and ommited results to lower their weightings
+tolSTD = 3 # Limit to acceptable number of standard deviations for outlier rejection
+
+################ MOTION MODEL (from motionCombined.py) ##################
+# Adustment parameters
 aM = 0.858707
 bM = 0 #-0.001387
 
@@ -45,31 +49,16 @@ def motion(v_com, v_comPrev, prevPos, dt, VarPrevious):
     # Find new position using this speed
     newPos = prevPos + v * dt
     # Find variance: Var(aX + b) = a^2*Var(X) but a = 1
+    motionVarX = VarPrevious + motionVarE
+    # Reduce the variance if the acceleration is below a specified tolerance
     if acceleration < tol:
-        motionVarX = (VarPrevious + motionVarE)/div #VarLookup(newPos, xLookupMotion, variancesMotion) 
-    else:
-        motionVarX = VarPrevious + motionVarE #VarLookup(newPos, xLookupMotion, variancesMotion) 
-
+        motionVarX = motionVarX/div
+    
     return newPos, motionVarX
 
-def linearMotionVar(x0, VarPrevious):
-    processVar = VarLookup(x0, xLookupMotion, variancesMotion)
-    motionVarX = aM**2 * VarPrevious + processVar # Var(aX + b) = a^2*Var(X)
-    return motionVarX
 
-##### IR4 Sensor Model #######################################
-# For 5th order
-# a = 4.608906e+01
-# b = -8.806964e+01
-# c = -74.71687
-# d = 40.92253
-# e = -2.220859
-# f = 1.492627
-# g = 0.1180388
-# h = 0.1500129
-# i = 0.3617102
-# j = -1.330797
-# For 4th order
+################## IR4 Sensor Model #######################################
+# Parameters from fitCurveIR4
 a4 = 46.08906 
 b4 = -88.06964 
 c4 = 47.97408 
@@ -80,14 +69,14 @@ h4 = 1.632003e-01
 i4 = 1.971881e-01 
 j4 = -1.051197e-01 
 x04 = 0.8
-
 ir4MeanE = -0.0016598
 ir4VarE = 0.0395728
-
+# Range of sensor
 ir4Min = 1
 ir4Max = 5
 
 def ir4(x):
+    """IR4 piecewise model"""
     if x <= x04:
         z = a4 * x**4 + b4 * x**3 + c4 * x**2 + d4 * x + e4
     else:
@@ -95,7 +84,8 @@ def ir4(x):
     return z
 
 def ir4Inv(z, x0):
-    """returns a list of possible x values for a given z"""
+    """Calculates the sensor estimate and variance using prior belief and measurement 
+    by inverting the IR4 model above"""
     possibleX = []
     # Find the roots of the first section of function and add them if the suitable
     roots = np.roots([a4, b4, c4, d4, e4-z])    
@@ -118,14 +108,12 @@ def ir4Inv(z, x0):
         # Check that its within the range of the sensor
         if (xIr4 <= ir4Min) or (xIr4 >= ir4Max):
             ir4VarX = excludeVar
-            # xIr4 = x0
         else:
             # Outlier Rejection
             ir4VarX = linearIr3Var(x0)
             diff = abs(xIr4-x0)
             std = np.sqrt(ir4VarX)
-            if diff > 3*std :
-                # xIr4 = x0
+            if diff > tolSTD*std :
                 ir4VarX = excludeVar
     else:
         # No root from calc give high variance but last position
@@ -136,6 +124,7 @@ def ir4Inv(z, x0):
     return xIr4, ir4VarX
 
 def derivativeIr4(x):
+    """Derivative of IR4 model"""
     if x <= x04:
         return 4*a4*x**3 + 3*b4*x**2 + 2*c4*x + d4
     else:
@@ -151,7 +140,8 @@ def linearIr4Var(x0):
     return varX
 
 
-##### Sonar Model ########################################
+########################### Sonar Model ########################################
+# Parameters from fitCurveSonar.py
 aS = 0.99499792
 bS = -0.01731528
 sonarMeanE = -1.814182e-12
@@ -161,13 +151,16 @@ sonarMin = 0.02
 sonarMax = 4
 
 def sonar(x):
+    """Sonar linear Model"""
     return  aS * x + bS
 
 def sonarInv(z, x0):
+    """Calculates the sensor estimate and variance using prior belief and measurement 
+    by inverting the sensor model above"""
     xS = (z - bS)/aS
-    varZ = sonarVarE # VarLookup(x0, xLookupSonar, variancesSonar)
+    varZ = sonarVarE
     sonarVarX = varZ/aS**2  # Var(aX + b) = a^2*Var(X)
-    
+    # Outlier rejection
     if (xS <= sonarMin) or (xS >= sonarMax):
         sonarVarX = excludeVar
     else:
@@ -180,7 +173,8 @@ def sonarInv(z, x0):
     return xS, sonarVarX
 
 
-##### IR3 Model ###########################################
+################## IR3 Model ###########################################
+# Parameters from IR3
 a3 = 3.37323446
 b3 = -0.00565075
 c3 = 0.17960171
@@ -193,9 +187,11 @@ ir3MeanE = 6.8549e-10
 ir3VarE = 0.005288364
 
 def ir3(x):
+    """IR3 Model"""
     return 1/(a3*x + b3) + c3*x + d3
 
 def derivativeIr3(x):
+    """Derivative of IR3 Model"""
     return -a3/(a3*x + b3)**2 + c3
 
 def ir3Inv(z, x0):
@@ -230,8 +226,8 @@ def linearIr3Var(x0):
     varZ = VarLookup(x0, xLookupIr3, variancesIr3) 
     m = derivativeIr3(x0)
     varX = varZ/m**2
-    if varX > outlierVar:
-        varX = outlierVar
+    if varX > excludeVar:
+        varX = excludeVar
     return varX
     
 ##### Lookup Function and Tables ##########################
@@ -253,14 +249,14 @@ def VarLookup(x, xLookup, variances):
             # print("Var = {}".format(variances[i]))
             Var = variances[i]
         else: 
-            Var = outlierVar
+            Var = excludeVar
     return Var
 
 
 ################### Kalman Filter #####################
 # Initial states
 initialX = 0
-initialVar = 0
+initialVar = 0.001
 # Lists to store values for plotting
 postXL = []
 postVarL = []
@@ -313,7 +309,7 @@ for i in range(0, len(index)-1):
     initialX = postX
     initialVar = postVar
 
-############## Post Processing #################
+################## Post Processing #################
 # Get the error of whole model
 if not test:
     error = []
@@ -334,13 +330,10 @@ x = time[m:(M-1)]
 # Plot 1 showing the variances of each sensor
 fig1, axes1 = subplots(3)
 axes1[0].plot(x, ir4VarL[m:M])
-# axes1[0].set_ylim(0, 2)
 axes1[0].set_ylabel('ir4Var')
 axes1[1].plot(x, ir3VarL[m:M])
-# axes1[1].set_ylim(0, 2)
 axes1[1].set_ylabel('ir3VarL')
 axes1[2].plot(x, sonarVarL[m:M])
-# axes1[2].set_ylim(0, 2)
 axes1[2].set_ylabel('sonarVarL')
 axes1[2].set_xlabel('Time (s)')
 
@@ -349,15 +342,29 @@ fig, axes = subplots(3)
 axes[0].plot(x, postXL[m:M])
 if not test:
     axes[0].plot(x, dist[m:(M-1)])
+    axes[0].legend(["Estimated position", "True position"])
 axes[0].set_ylabel('Displacement (m)')
+axes[0].set_xticks([])
 axes[1].plot(x, std[m:M])
 axes[1].set_ylabel('Std dev (m)')
-axes[2].plot(x, wSonar[m:M])
-axes[2].plot(x, wIr4[m:M])
+axes[1].set_xticks([])
 axes[2].plot(x, K1s[m:M])
+axes[2].plot(x, wSonar[m:M])
 axes[2].plot(x, wIr3[m:M])
+axes[2].plot(x, wIr4[m:M])
 axes[2].set_ylabel('Gain')
 axes[2].set_xlabel('Time (s)')
-axes[2].legend(["Sonar", "wIr4", "Motion", "wIr4"])
+axes[2].legend(["Motion", "Sonar", "wIr4", "wIr4"], prop={'size': 8})
+
+# Plot 3 for showing just the motion of each model
+if not test:
+    plt.figure(3)
+    plt.plot(x, postXL[m:M])
+    plt.plot(x, dist[m:(M-1)])
+    plt.legend(["Estimated position", "True position"])
+    plt.ylabel('Displacement (m)')
+    plt.xlabel('Time (s)')
+
 
 show()
+
