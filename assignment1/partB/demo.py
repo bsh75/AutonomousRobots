@@ -93,26 +93,28 @@ axes.set_ylabel('x')
 axes.figure.canvas.draw()
 axes.figure.canvas.flush_events()
 
-# TODO: Set this to avoid twirl at start
-# When your algorithm works well set to 0
-start_step = 50
 
+start_step = 0
 
-Nparticles = 200
+#number of particles in filter
+Nparticles = 100
 
-# TODO: How many steps between display updates
-disqqqplay_steps = 10
+#  How many steps between display updates
+display_steps = 100
 
-# TODO: Set initial belief.  This assumes a uniform distribution for the pose
-# around the known starting pose.  It simplifies the localisation to a
-# tracking problem.
+#Motion PDF standard devation and std if particle weights go below threshold
+PDF_std = 0.001
+std_lost = 10* PDF_std
+
+#  Set initial belief.  This assumes a uniform distribution for the pose
+# around the known starting pose. 
 start_pose = slam_poses[start_step]
-Xmin = start_pose[0] - 0.2
-Xmax = start_pose[0] + 0.2
-Ymin = start_pose[1] - 0.2
-Ymax = start_pose[1] + 0.2
-Tmin = start_pose[2] - 0.2
-Tmax = start_pose[2] + 0.2
+Xmin = start_pose[0] - 0.3
+Xmax = start_pose[0] + 0.3
+Ymin = start_pose[1] - 0.3
+Ymax = start_pose[1] + 0.3
+Tmin = start_pose[2] - 0.3
+Tmax = start_pose[2] + 0.3
 
 weights = np.ones(Nparticles)
 poses = np.zeros((Nparticles, 3))
@@ -135,7 +137,7 @@ for n in range(start_step + 1, Nposes):
 
    
     poses = motion_model(poses, commands[n-1], odom_poses[n], odom_poses[n - 1],
-                         t[n] - t[n - 1])
+                         t[n] - t[n - 1], PDF_std)
     
     if beacon_visible[n]:
 
@@ -145,13 +147,12 @@ for n in range(start_step + 1, Nposes):
 
        
         weights *= sensor_model(poses, beacon_pose, beacon_loc)
-        #print("weights = {}".format(weights))
 
         if sum(weights) < 1e-50:
-            print('All weights are close to zero, you are lost...')
-            weights = np.ones(Nparticles)
+           print('All weights are close to zero, you are lost...')
+            poses = motion_model(poses, commands[n-1], odom_poses[n], odom_poses[n - 1],
+                         t[n] - t[n - 1],std_lost)
             
-            # break
 
         if is_degenerate(weights):
             print('Resampling %d' % n)
@@ -174,7 +175,7 @@ for n in range(start_step + 1, Nposes):
         display_step_prev = n
 
         print(state)
-        
+
     key = get_key()
     if key == '.':
         state = 'step'
